@@ -46,6 +46,7 @@ import Plansandpricing from "./pages/Plansandpricing";
 import ServiceDetails from "./pages/ServiceDetails";
 import MyPackages from "./pages/MyPackages";
 import MyIndividualservices from "./pages/MyIndividualservices";
+import Partners from "./pages/Partners";
 
 function App() {
   const location = useLocation();
@@ -68,18 +69,18 @@ function App() {
     "/dashboard", // includes /dashboard and its children
   ];
 
-useEffect(() => {
-  const user = getSecureItem("user");
-  if (typeof user === "string") {
-    try {
-      const parsed = JSON.parse(user);
-      setSecureItem("user", parsed); // re-store correctly
-    } catch {
-      console.warn("Old user format found, clearing...");
-      localStorage.removeItem("user");
+  useEffect(() => {
+    const user = getSecureItem("user");
+    if (typeof user === "string") {
+      try {
+        const parsed = JSON.parse(user);
+        setSecureItem("user", parsed); // re-store correctly
+      } catch {
+        console.warn("Old user format found, clearing...");
+        localStorage.removeItem("user");
+      }
     }
-  }
-}, []);
+  }, []);
   const hideLayout = hideLayoutPaths.some((path) =>
     location.pathname.startsWith(path)
   );
@@ -97,8 +98,9 @@ useEffect(() => {
           <Route path="/startbusiness/*" element={<StartYourBusiness />} />
           <Route path="/checking" element={<BusinessPanel />} />
           <Route path="/services" element={<Services />} />
-             <Route path="/services/:id" element={<ServiceDetails />} />
+          <Route path="/services/:id" element={<ServiceDetails />} />
           <Route path="/products" element={<ProductList />} />
+          <Route path="/partners" element={<Partners />} />
 
           <Route path="/startbusiness/about" element={<Tellabout />} />
           <Route path="/startbusiness/subscriptions" element={<Subscription />} />
@@ -113,7 +115,7 @@ useEffect(() => {
             <Route path="moderncalendar" element={<ModernCalendar />} />
             <Route path="events" element={<ProfileEvents />} />
             <Route path="files" element={<CustomerFiles />} />
-                        <Route path="companydetails" element={<CompanyDetails />} />
+            <Route path="companydetails" element={<CompanyDetails />} />
 
           </Route>
 
