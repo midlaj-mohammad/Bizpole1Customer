@@ -13,11 +13,15 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         associateName: "",
         mobile: "",
         email: "",
-        businessType: "",
         state: "",
         district: "",
         language: "",
         address: "",
+        addressLine1: "",
+        addressLine2: "",
+        postalCode: "",
+        country: "",
+        profession: "",
     });
     const [step, setStep] = useState(1);
     const [kycFiles, setKycFiles] = useState({
@@ -44,7 +48,7 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
             newErrors.email = "Please enter a valid email address";
         }
-        if (!formData.businessType) newErrors.businessType = "Business type is required";
+        if (!formData.profession) newErrors.profession = "Profession is required";
         if (!formData.state) newErrors.state = "State is required";
         if (!formData.district) newErrors.district = "District is required";
         if (!formData.language) newErrors.language = "Preferred language is required";
@@ -94,57 +98,66 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
 
     const handleNextStep = async (e) => {
         e.preventDefault();
-        if (validateStep1()) {
-            setIsSubmitting(true);
-            try {
-                const userObj = getSecureItem("user") || {};
 
-                // Map names to IDs
-                const selectedState = locationData.states.find(s => s.stateName === formData.state);
-                const stateId = selectedState ? selectedState.stateId : null;
+        if (!validateStep1()) return;
 
-                const selectedDistrict = selectedState?.districts.find(d => d.districtName === formData.district);
-                const districtId = selectedDistrict ? selectedDistrict.districtId : null;
+        setIsSubmitting(true);
 
-                const payload = {
-                    AssociateName: formData.associateName,
-                    Mobile: formData.mobile,
-                    Email: formData.email,
-                    Address: formData.address,
-                    State: stateId,
-                    District: districtId,
-                    PreferredLanguage: formData.language,
-                    CreatedBy: userObj.EmployeeID || null,
-                    EmployeeID: userObj.EmployeeID || null,
-                    FranchiseeID: userObj.FranchiseeID || null
-                };
+        try {
+            const userObj = getSecureItem("user") || {};
 
-                const response = await AssociateApi.createAssociate(payload);
-                if (response.success) {
-                    setCreatedAssociateId(response.data.AssociateID);
+            // ✅ Combine address fields into ONE string
+            const fullAddress = [
+                formData.addressLine1,
+                formData.addressLine2,
+                formData.postalCode,
+                formData.country,
+            ]
+                .filter(Boolean)
+                .join(", ");
 
-                    // Store token and user for auto-login
-                    if (response.token && response.user) {
-                        setSecureItem("token", response.token);
-                        setSecureItem("user", response.user);
-                    }
+            const payload = {
+                AssociateName: formData.associateName,
+                Mobile: formData.mobile,
+                Email: formData.email,
+                Address: fullAddress, // ✅ single combined string
+                State: formData.state,
+                District: formData.district,
+                PreferredLanguage: formData.language,
+                CreatedBy: userObj.EmployeeID || null,
+                EmployeeID: userObj.EmployeeID || null,
+                FranchiseeID: userObj.FranchiseeID || null,
+                Profession: formData.profession,
+            };
 
-                    setStep(2);
-                } else {
-                    setErrors(prev => ({ ...prev, api: response.message || "Failed to create associate" }));
+            const response = await AssociateApi.createAssociate(payload);
+
+            if (response.success) {
+                setCreatedAssociateId(response.data.AssociateID);
+
+                if (response.token && response.user) {
+                    setSecureItem("token", response.token);
+                    setSecureItem("user", response.user);
                 }
-            } catch (error) {
-                console.error("Associate creation error:", error);
-                setErrors(prev => ({
+
+                setStep(2);
+            } else {
+                setErrors((prev) => ({
                     ...prev,
-                    api: error.response?.data?.message || "An error occurred while creating associate"
+                    api: response.message || "Failed to create associate",
                 }));
-            } finally {
-                setIsSubmitting(false);
             }
+        } catch (error) {
+            setErrors((prev) => ({
+                ...prev,
+                api:
+                    error.response?.data?.message ||
+                    "An error occurred while creating associate",
+            }));
+        } finally {
+            setIsSubmitting(false);
         }
     };
-
 
     const handleBackStep = () => {
         setStep(1);
@@ -193,6 +206,11 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                     district: "",
                     language: "",
                     address: "",
+                    addressLine1: "",
+                    addressLine2: "",
+                    postalCode: "",
+                    country: "",
+                    profession: "",
                 });
                 setKycFiles({
                     pan: null,
@@ -303,26 +321,27 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                                     {errors.email && <span className="text-xs text-red-500 ml-2">{errors.email}</span>}
                                 </div>
 
-                                {/* Business Type */}
+                                {/* Profession */}
                                 <div className="flex flex-col gap-2 relative">
                                     <label className="text-sm font-semibold text-gray-700">
-                                        <span className="text-red-500 mr-1">*</span> Select Business Type
+                                        <span className="text-red-500 mr-1">*</span> Select Profession
                                     </label>
                                     <div className="relative">
                                         <select
-                                            name="businessType"
-                                            value={formData.businessType}
+                                            name="profession"
+                                            value={formData.profession || ""}
                                             onChange={handleChange}
-                                            className={`w-full appearance-none px-4 py-3 rounded-2xl border ${errors.businessType ? 'border-red-400 focus:ring-red-100' : 'border-yellow-400 focus:ring-yellow-100'} focus:outline-none focus:ring-2 transition-all text-gray-600 bg-white`}
+                                            className={`w-full appearance-none px-4 py-3 rounded-2xl border ${errors.profession ? 'border-red-400 focus:ring-red-100' : 'border-yellow-400 focus:ring-yellow-100'} focus:outline-none focus:ring-2 transition-all text-gray-600 bg-white`}
                                         >
-                                            <option value="" disabled>Select...</option>
-                                            <option value="individual">Individual</option>
-                                            <option value="partnership">Partnership</option>
-                                            <option value="pvt_ltd">Private Limited</option>
+                                            <option value="" disabled>Select profession...</option>
+                                            <option value="lawyer">Lawyer</option>
+                                            <option value="consultant">Consultant</option>
+                                            <option value="engineer">Engineer</option>
+                                            <option value="doctor">Doctor</option>
                                         </select>
                                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                                     </div>
-                                    {errors.businessType && <span className="text-xs text-red-500 ml-2">{errors.businessType}</span>}
+                                    {errors.profession && <span className="text-xs text-red-500 ml-2">{errors.profession}</span>}
                                 </div>
 
                                 {/* State */}
@@ -398,17 +417,55 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                                     {errors.language && <span className="text-xs text-red-500 ml-2">{errors.language}</span>}
                                 </div>
 
-
-                                {/* Address */}
+                                {/* Address Line 1 */}
                                 <div className="flex flex-col gap-2 md:col-span-2">
-                                    <label className="text-sm font-semibold text-gray-700">Address</label>
-                                    <textarea
-                                        name="address"
-                                        value={formData.address}
+                                    <label className="text-sm font-semibold text-gray-700">Address Line 1 (House No, Building, Street)</label>
+                                    <input
+                                        type="text"
+                                        name="addressLine1"
+                                        value={formData.addressLine1 || ""}
                                         onChange={handleChange}
-                                        rows="4"
-                                        placeholder="Enter address"
-                                        className="w-full px-4 py-3 rounded-2xl border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-all placeholder:text-gray-300 resize-none"
+                                        placeholder="Enter Address Line 1"
+                                        className="w-full px-4 py-3 rounded-2xl border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-all placeholder:text-gray-300"
+                                    />
+                                </div>
+
+                                {/* Address Line 2 */}
+                                <div className="flex flex-col gap-2 md:col-span-2">
+                                    <label className="text-sm font-semibold text-gray-700">Address Line 2 (Area, Apartment, Landmark – optional)</label>
+                                    <input
+                                        type="text"
+                                        name="addressLine2"
+                                        value={formData.addressLine2 || ""}
+                                        onChange={handleChange}
+                                        placeholder="Enter Address Line 2"
+                                        className="w-full px-4 py-3 rounded-2xl border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-all placeholder:text-gray-300"
+                                    />
+                                </div>
+
+                                {/* Postal Code / ZIP Code */}
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm font-semibold text-gray-700">Postal Code / ZIP Code</label>
+                                    <input
+                                        type="text"
+                                        name="postalCode"
+                                        value={formData.postalCode || ""}
+                                        onChange={handleChange}
+                                        placeholder="Enter Postal Code / ZIP Code"
+                                        className="w-full px-4 py-3 rounded-2xl border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-all placeholder:text-gray-300"
+                                    />
+                                </div>
+
+                                {/* Country */}
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm font-semibold text-gray-700">Country</label>
+                                    <input
+                                        type="text"
+                                        name="country"
+                                        value={formData.country || ""}
+                                        onChange={handleChange}
+                                        placeholder="Enter Country"
+                                        className="w-full px-4 py-3 rounded-2xl border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-all placeholder:text-gray-300"
                                     />
                                 </div>
 
