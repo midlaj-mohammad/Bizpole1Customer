@@ -18,6 +18,13 @@ const AdComponent = () => {
   }, [current]);
 
   return (
+
+
+
+
+
+
+    
     <div className="relative rounded-2xl overflow-hidden w-full   flex items-center justify-center mt-15">
       <img
         src={adImages[current]}
