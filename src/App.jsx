@@ -155,7 +155,7 @@ function App() {
             <Route path="/associate" element={<AssociateLayout />}>
               <Route path="dashboard" element={<AssociateDashboard />} />
               <Route path="profile" element={<AssociateProfile />} />
-              <Route path="leads" element={<AssociateLeads />} />
+              {/* <Route path="leads" element={<AssociateLeads />} /> */}
               <Route path="deals" element={<AssociateDeals />} />
               <Route path="quotes" element={<AssociateQuotes />} />
               <Route path="orders" element={<AssociateOrders />} />

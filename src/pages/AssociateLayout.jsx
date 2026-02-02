@@ -36,7 +36,7 @@ const AssociateLayout = () => {
 
     const sidebarItems = [
         { id: 'dashboard', path: '/associate/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard' },
-        { id: 'leads', path: '/associate/leads', icon: <Users className="w-5 h-5" />, label: 'Leads' },
+        // { id: 'leads', path: '/associate/leads', icon: <Users className="w-5 h-5" />, label: 'Leads' },
         { id: 'deals', path: '/associate/deals', icon: <Handshake className="w-5 h-5" />, label: 'Deals' },
         { id: 'quotes', path: '/associate/quotes', icon: <FileText className="w-5 h-5" />, label: 'Quotes' },
         { id: 'orders', path: '/associate/orders', icon: <ShoppingCart className="w-5 h-5" />, label: 'Orders' },
