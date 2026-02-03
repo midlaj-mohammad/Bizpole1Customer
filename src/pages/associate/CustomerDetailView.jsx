@@ -16,6 +16,7 @@ import {
     Globe
 } from 'lucide-react';
 import * as CustomerApi from '../../api/CustomerApi';
+import * as CompanyApi from '../../api/CompanyApi';
 import { format } from 'date-fns';
 
 const CustomerDetailView = () => {
@@ -30,7 +31,7 @@ const CustomerDetailView = () => {
         const fetchCustomerDetails = async () => {
             setLoading(true);
             try {
-                const response = await CustomerApi.getCustomerById(id);
+                const response = await CustomerApi.getCustomerById(id, 9);
                 if (response.data.success) {
                     setCustomer(response.data.data);
                 } else {
@@ -112,35 +113,15 @@ const CustomerDetailView = () => {
     );
 
     const renderCompanyInfo = () => (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {customer.Companies && customer.Companies.length > 0 ? (
                 customer.Companies.map((company) => (
-                    <div key={company.CompanyID} className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-blue-50 rounded-lg">
-                                <Briefcase className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-900">{company.BusinessName}</h3>
-                            {company.PrimaryCompany === 1 && (
-                                <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                    Primary
-                                </span>
-                            )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <DetailItem label="Company Code" value={company.CompanyCode || '-'} />
-                            <DetailItem label="GST Number" value={company.GSTNumber || '-'} />
-                            <DetailItem label="PAN" value={company.CompanyPAN || '-'} />
-                            <DetailItem label="Constitution" value={company.ConstitutionCategory || '-'} />
-                            <DetailItem label="Sector" value={company.Sector || '-'} />
-                            <DetailItem label="Email" value={company.CompanyEmail || '-'} />
-                        </div>
-                    </div>
+                    <CompanySummaryRow key={company.CompanyID} companyId={company.CompanyID} />
                 ))
             ) : (
-                <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                <div className="text-center py-12 bg-white rounded-3xl border border-slate-200">
                     <Briefcase className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                    <p className="text-slate-500 font-medium">No company information available</p>
+                    <p className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">No company information available</p>
                 </div>
             )}
         </div>
@@ -211,10 +192,70 @@ const CustomerDetailView = () => {
     );
 };
 
+const CompanySummaryRow = ({ companyId }) => {
+    const [companyDetails, setCompanyDetails] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDetails = async () => {
+            try {
+                const response = await CompanyApi.getCompanyById(companyId);
+                if (response.success) {
+                    setCompanyDetails(response.data);
+                }
+            } catch (err) {
+                console.error("Error fetching company details", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDetails();
+    }, [companyId]);
+
+    if (loading) {
+        return (
+            <div className="bg-white rounded-3xl p-12 border border-slate-100 shadow-sm flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-amber-500 animate-spin mr-3" />
+                <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Fetching Company Data...</span>
+            </div>
+        );
+    }
+
+    if (!companyDetails) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-[1.5rem] p-10 border border-amber-400 shadow-sm"
+        >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-8">
+                <DetailItem label="Company ID" value={companyDetails.CompanyID} />
+                <DetailItem label="Created Date" value={companyDetails.CreatedAt ? format(new Date(companyDetails.CreatedAt), 'dd/MM/yyyy') : '-'} />
+
+                <DetailItem label="Company Name" value={companyDetails.BusinessName || '-'} />
+                <DetailItem label="Company Created" value={companyDetails.CreatedByName || '-'} />
+
+                <DetailItem label="Mobile 1" value={companyDetails.CompanyMobile || '-'} />
+                <DetailItem label="Email 1" value={companyDetails.CompanyEmail || '-'} />
+
+                <DetailItem label="Website" value={companyDetails.Website || '-'} />
+                <DetailItem label="Constitution Category" value={companyDetails.ConstitutionCategory || '-'} />
+
+                <DetailItem label="Sector" value={companyDetails.Sector || '-'} />
+                <DetailItem label="Country" value={companyDetails.Country || 'India'} />
+
+                <DetailItem label="State" value={companyDetails.State || '-'} />
+                <DetailItem label="City" value={companyDetails.District || '-'} />
+            </div>
+        </motion.div>
+    );
+};
+
 const DetailItem = ({ label, value }) => (
     <div className="flex items-center gap-2">
-        <p className="text-[13px] font-bold text-slate-900 whitespace-nowrap">{label}:</p>
-        <p className="text-[13px] text-slate-600 font-medium">{value}</p>
+        <p className="text-[13px] font-bold text-slate-800 whitespace-nowrap">{label}:</p>
+        <p className="text-[13px] text-slate-500 font-medium">{value}</p>
     </div>
 );
 
