@@ -31,8 +31,10 @@ const CustomerDetailView = () => {
         const fetchCustomerDetails = async () => {
             setLoading(true);
             try {
-                const associateId = localStorage.getItem('AssociateID');
-                const response = await CustomerApi.getCustomerById(id, associateId);
+                const EmployeeID = localStorage.getItem('EmployeeID');
+                const response = await CustomerApi.getCustomerById(id, EmployeeID);
+                console.log("response", response);
+
                 if (response.data.success) {
                     setCustomer(response.data.data);
                 } else {
@@ -201,6 +203,7 @@ const CompanySummaryRow = ({ companyId }) => {
         const fetchDetails = async () => {
             try {
                 const response = await CompanyApi.getCompanyById(companyId);
+
                 if (response.success) {
                     setCompanyDetails(response.data);
                 }
