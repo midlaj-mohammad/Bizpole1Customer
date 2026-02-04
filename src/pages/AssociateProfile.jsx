@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { User, Mail, Phone, Building2, MapPin, FileText, CheckCircle2, Upload, Edit } from 'lucide-react';
+import { User, Mail, Phone, Building2, MapPin, FileText, CheckCircle2, Upload, Edit, Download, Share2, Link } from 'lucide-react';
 import { getSecureItem } from '../utils/secureStorage';
 import axiosInstance from '../api/axiosInstance';
 import { getAssociateById, getAssociateDocuments, uploadAssociateDocuments } from '../api/AssociateApi';
@@ -238,6 +238,73 @@ const AssociateProfile = () => {
 
                 {/* Right Column - Status & Stats */}
                 <div className="space-y-6">
+                    {/* QR Code Card */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h2 className="text-lg font-bold text-slate-900 mb-4">My QR Code</h2>
+                        <div className="flex flex-col items-center space-y-4">
+                            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                                <img
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://bizpole-one-customer.vercel.app?ref=${user.id}`}
+                                    alt="Associate QR Code"
+                                    className="w-48 h-48 object-contain"
+                                />
+                            </div>
+                            <p className="text-sm text-slate-500 text-center">
+                                Share this QR code to refer customers directly.
+                            </p>
+                            <div className="flex gap-2 w-full">
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://bizpole-one-customer.vercel.app?ref=${user.id}`);
+                                            const blob = await response.blob();
+                                            const url = window.URL.createObjectURL(blob);
+                                            const link = document.createElement('a');
+                                            link.href = url;
+                                            link.download = `associate-qr-${user.id}.png`;
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                        } catch (error) {
+                                            console.error('Download failed:', error);
+                                        }
+                                    }}
+                                    className="flex-1 flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-600 hover:text-[#4b49ac]"
+                                >
+                                    <Download className="w-5 h-5" />
+                                    <span className="text-xs font-medium">Download</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: 'My Associate Profile',
+                                                text: 'Check out my associate profile on Bizpole',
+                                                url: `https://bizpole-one-customer.vercel.app?ref=${user.id}`
+                                            }).catch(console.error);
+                                        } else {
+                                            alert("Share not supported on this device/browser");
+                                        }
+                                    }}
+                                    className="flex-1 flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-600 hover:text-[#4b49ac]"
+                                >
+                                    <Share2 className="w-5 h-5" />
+                                    <span className="text-xs font-medium">Share</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`https://bizpole-one-customer.vercel.app?ref=${user.id}`);
+                                        alert("Link copied to clipboard!");
+                                    }}
+                                    className="flex-1 flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-600 hover:text-[#4b49ac]"
+                                >
+                                    <Link className="w-5 h-5" />
+                                    <span className="text-xs font-medium">Copy Link</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Quick Stats */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                         <h2 className="text-lg font-bold text-slate-900 mb-6">Quick Stats</h2>

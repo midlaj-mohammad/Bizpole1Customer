@@ -113,7 +113,7 @@ export const upsertQuote = async (plan) => {
         EmployeeName: agentName || "",
       },
       FranchiseeID: franchiseeId || 43,
-      SourceOfSale: "Website",
+      SourceOfSale: plan.isAssociate ? "Associate" : "Website",
       Remarks: "Generated from subscription page",
       IsIndividual: 0,
       PackageID: plan.id || plan.packageId,
