@@ -159,6 +159,7 @@ const AssociateDeals = () => {
                                 <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Action</th>
                             </tr>
                         </thead>
+
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
@@ -196,92 +197,119 @@ const AssociateDeals = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                deals.filter(d =>
-                                    d.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                    d.DealCode?.toLowerCase().includes(searchTerm.toLowerCase())
-                                ).map((deal, index) => (
-                                    <tr key={deal.id} className="hover:bg-slate-50/80 transition-colors group">
-                                        <td className="px-6 py-4 text-sm text-slate-600 font-medium">{index + 1}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-400 font-mono tracking-tight">{deal.DealCode || "--"}</td>
-                                        <td className="px-6 py-4">
-                                            <div
-                                                className="flex items-center gap-2 group cursor-pointer"
-                                                onClick={() => navigate(`/associate/deals/${deal.id}`)}
-                                            >
-                                                <span className="text-sm font-bold text-slate-900 group-hover:text-[#4b49ac] transition-colors">
-                                                    {deal.name}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 rounded-full text-[11px] font-bold border ${getStatusColor(deal.status)}`}>
-                                                {deal.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">{deal.CompanyName || "--"}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="w-16">
-                                                <input
-                                                    type="text"
-                                                    defaultValue={deal.probability || 0}
-                                                    className="w-full px-2 py-1 text-xs border border-slate-200 rounded md:bg-transparent bg-white focus:bg-white focus:ring-2 focus:ring-[#4b49ac]/20 outline-none"
-                                                />
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">
-                                            {deal.ClosureDate ? format(new Date(deal.ClosureDate), 'dd-MM-yyyy') : "--"}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 max-w-[200px] truncate">
-                                            {deal.serviceName || "--"}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm font-bold text-slate-900">
-                                            {deal.total ? `₹${Number(deal.total).toLocaleString('en-IN')}` : "--"}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-500 font-mono tracking-tighter">
-                                            {deal.mobile}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => handleCreateQuote(deal)}
-                                                    disabled={creatingQuote === deal.id}
-                                                    className="bg-amber-100 text-amber-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-200 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                                deals
+                                    .filter(d =>
+                                        d.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                        d.DealCode?.toLowerCase().includes(searchTerm.toLowerCase())
+                                    )
+                                    .map((deal, index) => (
+                                        <tr key={deal.id} className="hover:bg-slate-50/80 transition-colors group">
+                                            <td className="px-6 py-4 text-sm text-slate-600 font-medium">{index + 1}</td>
+
+                                            <td className="px-6 py-4 text-sm text-slate-400 font-mono tracking-tight">
+                                                {deal.DealCode || "--"}
+                                            </td>
+
+                                            <td className="px-6 py-4">
+                                                <div
+                                                    className="flex items-center gap-2 cursor-pointer"
+                                                    onClick={() => navigate(`/associate/deals/${deal.id}`)}
                                                 >
-                                                    {creatingQuote === deal.id ? (
-                                                        <>
-                                                            <Loader2 className="w-3 h-3 animate-spin" />
-                                                            Creating...
-                                                        </>
-                                                    ) : (
-                                                        'Create Quote'
-                                                    )}
-                                                </button>
-                                                <button className="p-2 text-slate-400 hover:text-[#4b49ac] hover:bg-slate-100 rounded-lg transition-all">
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                                    <span className="text-sm font-bold text-slate-900 hover:text-[#4b49ac] transition-colors">
+                                                        {deal.name}
+                                                    </span>
+                                                </div>
+                                            </td>
+
+                                            <td className="px-6 py-4">
+                                                <span className={`px-3 py-1 rounded-full text-[11px] font-bold border ${getStatusColor(deal.status)}`}>
+                                                    {deal.status}
+                                                </span>
+                                            </td>
+
+                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                                {deal.CompanyName || "--"}
+                                            </td>
+
+                                            <td className="px-6 py-4">
+                                                <div className="w-16">
+                                                    <input
+                                                        type="text"
+                                                        defaultValue={deal.probability || 0}
+                                                        className="w-full px-2 py-1 text-xs border border-slate-200 rounded md:bg-transparent bg-white focus:bg-white focus:ring-2 focus:ring-[#4b49ac]/20 outline-none"
+                                                    />
+                                                </div>
+                                            </td>
+
+                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                                {deal.ClosureDate
+                                                    ? format(new Date(deal.ClosureDate), "dd-MM-yyyy")
+                                                    : "--"}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-sm text-slate-600 max-w-[200px] truncate">
+                                                {deal.serviceName || "--"}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-sm font-bold text-slate-900">
+                                                {deal.total
+                                                    ? `₹${Number(deal.total).toLocaleString("en-IN")}`
+                                                    : "--"}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-sm text-slate-500 font-mono tracking-tighter">
+                                                {deal.mobile}
+                                            </td>
+
+                                            {/* ✅ ACTION COLUMN (ALWAYS VISIBLE) */}
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleCreateQuote(deal)}
+                                                        disabled={creatingQuote === deal.id}
+                                                        className="bg-amber-100 text-amber-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-200 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                                                    >
+                                                        {creatingQuote === deal.id ? (
+                                                            <>
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                                Creating...
+                                                            </>
+                                                        ) : (
+                                                            "Create Quote"
+                                                        )}
+                                                    </button>
+
+                                                    <button className="p-2 text-slate-400 hover:text-[#4b49ac] hover:bg-slate-100 rounded-lg transition-all">
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+
+                                                    <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
                             )}
                         </tbody>
                     </table>
                 </div>
 
-                {/* Footer/Pagination Placeholder */}
                 {!loading && deals.length > 0 && (
                     <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
                         <p className="text-xs text-slate-500 font-medium">
                             Showing <span className="text-slate-900">{deals.length}</span> deals
                         </p>
+
                         <div className="flex items-center gap-2">
                             <button className="p-2 text-slate-400 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50" disabled>
                                 Prev
                             </button>
-                            <button className="px-3 py-1.5 bg-white text-[#4b49ac] border border-slate-200 rounded-lg text-xs font-bold shadow-sm">1</button>
+
+                            <button className="px-3 py-1.5 bg-white text-[#4b49ac] border border-slate-200 rounded-lg text-xs font-bold shadow-sm">
+                                1
+                            </button>
+
                             <button className="p-2 text-slate-400 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50" disabled>
                                 Next
                             </button>
@@ -289,6 +317,8 @@ const AssociateDeals = () => {
                     </div>
                 )}
             </div>
+
+
 
             <AddDealModal
                 isOpen={isModalOpen}

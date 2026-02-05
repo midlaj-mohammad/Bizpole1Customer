@@ -88,6 +88,10 @@ const Tellabout = () => {
     fetchCountryCodes();
   }, []);
 
+  const partnerIdFromStorage = localStorage.getItem("PartnerID");
+  const isAssociate = !!partnerIdFromStorage;
+  const AssociateID = partnerIdFromStorage ? Number(partnerIdFromStorage) : null;
+
   // ✅ Form data state
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -132,6 +136,8 @@ const Tellabout = () => {
         Website: "",
         PinCode: "",
         PrimaryCompany: 1,
+        AssociateID: AssociateID,
+        isAssociate: isAssociate,
       },
     ],
   });
@@ -235,9 +241,13 @@ const Tellabout = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const user = getSecureItem("user") || {};
-    const isAssociate = user.role === "associate";
-    const AssociateID = isAssociate ? user.id : null;
+    // const user = getSecureItem("user") || {};
+    // const isAssociate = user.role === "associate";
+    // const AssociateID = isAssociate ? user.id : null;
+
+    const partnerIdFromStorage = localStorage.getItem("PartnerID");
+    const isAssociate = !!partnerIdFromStorage;
+    const AssociateID = partnerIdFromStorage ? Number(partnerIdFromStorage) : null;
 
     if (!formData.FranchiseeID) {
       alert("Please select language, state, and district to assign a franchisee before submitting.");
@@ -268,9 +278,13 @@ const Tellabout = () => {
         Sector: updatedFormData.Companies[0].Sector,
         BusinessNature: updatedFormData.Companies[0].BusinessNature,
         Website: updatedFormData.Companies[0].Website,
+        AssociateID: AssociateID,
+        isAssociate: isAssociate,
         PinCode: updatedFormData.PinCode,
         PrimaryCompany: 1,
       };
+
+
       const payload = {
         ...updatedFormData,
         Companies: [company],

@@ -244,7 +244,7 @@ const AssociateProfile = () => {
                         <div className="flex flex-col items-center space-y-4">
                             <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
                                 <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://bizpole-one-customer.vercel.app?ref=${user.id}`}
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://localhost:5173?ref=${user.id}`}
                                     alt="Associate QR Code"
                                     className="w-48 h-48 object-contain"
                                 />
@@ -256,7 +256,7 @@ const AssociateProfile = () => {
                                 <button
                                     onClick={async () => {
                                         try {
-                                            const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://bizpole-one-customer.vercel.app?ref=${user.id}`);
+                                            const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://localhost:5173?ref=${user.id}`);
                                             const blob = await response.blob();
                                             const url = window.URL.createObjectURL(blob);
                                             const link = document.createElement('a');
@@ -280,7 +280,7 @@ const AssociateProfile = () => {
                                             navigator.share({
                                                 title: 'My Associate Profile',
                                                 text: 'Check out my associate profile on Bizpole',
-                                                url: `https://bizpole-one-customer.vercel.app?ref=${user.id}`
+                                                url: `http://localhost:5173?ref=${user.id}`
                                             }).catch(console.error);
                                         } else {
                                             alert("Share not supported on this device/browser");
@@ -293,7 +293,7 @@ const AssociateProfile = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        navigator.clipboard.writeText(`https://bizpole-one-customer.vercel.app?ref=${user.id}`);
+                                        navigator.clipboard.writeText(`http://localhost:5173?ref=${user.id}`);
                                         alert("Link copied to clipboard!");
                                     }}
                                     className="flex-1 flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-600 hover:text-[#4b49ac]"
