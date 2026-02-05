@@ -1,11 +1,18 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, 
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+
+
+export const api = axios.create({
+  baseURL: "http://localhost:3000", // your backend
+});
+
 
 // Add interceptor to inject token from localStorage
 axiosInstance.interceptors.request.use(

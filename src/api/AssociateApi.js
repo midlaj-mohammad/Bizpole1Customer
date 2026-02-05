@@ -1,0 +1,137 @@
+import axios from "axios";
+import axiosInstance, { api } from "./axiosInstance";
+
+/**
+ * Create a new associate
+ * @param {Object} payload - Associate data
+ * @returns {Promise<Object>} - API response
+ */
+export const createAssociate = async (payload) => {
+    try {
+        const response = await axiosInstance.post("/associate/create", payload);
+        return response.data;
+    } catch (error) {
+        console.error("Error creating associate:", error);
+        throw error;
+    }
+};
+export const getAssociateById = async (id) => {
+    try {
+        const response = await axiosInstance.get(`/associateById/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error getting associate by ID:", error);
+        throw error;
+    }
+};
+
+/**
+ * Update an existing associate
+ * @param {Object} payload - Associate data with AssociateID
+ * @returns {Promise<Object>} - API response
+ */
+export const updateAssociate = async (payload) => {
+    try {
+        const response = await axiosInstance.post("/associate/update", payload);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating associate:", error);
+        throw error;
+    }
+};
+
+/**
+ * List associates with filters and pagination
+ * @param {Object} filters - Filter and pagination params
+ * @returns {Promise<Object>} - API response
+ */
+export const listAssociates = async (filters) => {
+    try {
+        const response = await axiosInstance.post("/associate/list", filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error listing associates:", error);
+        throw error;
+    }
+};
+
+/**
+ * Request OTP via Email for associate login
+ * @param {string} email 
+ */
+export const requestAssociateEmailOtp = async (email) => {
+    try {
+        const response = await axiosInstance.post("/associate/request-email-otp", { email });
+        return response.data;
+    } catch (error) {
+        console.error("Error requesting associate email OTP:", error);
+        throw error;
+    }
+};
+
+/**
+ * Verify OTP via Email for associate login
+ * @param {string} email 
+ * @param {string} otp 
+ */
+export const verifyAssociateEmailOtp = async (email, otp) => {
+    try {
+        const response = await axiosInstance.post("/associate/verify-email-otp", { email, otp });
+        return response.data;
+    } catch (error) {
+        console.error("Error verifying associate email OTP:", error);
+        throw error;
+    }
+};
+
+/**
+ * Upload associate documents
+ * @param {FormData} formData - FormData containing associateId and file fields
+ */
+export const uploadAssociateDocuments = async (formData) => {
+
+    console.log("checking...");
+    console.log({ formData });
+
+    console.log(localStorage.getItem("token"));
+
+
+    try {
+        const response = api.post(
+            "/associate/upload-documents",
+            formData,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error uploading associate documents:", error);
+        throw error;
+    }
+};
+
+/**
+ * Get associate documents
+ * @param {string|number} associateId 
+ */
+export const getAssociateDocuments = async (associateId) => {
+    try {
+        const response = await axiosInstance.get(`/associate/documents/${associateId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching associate documents:", error);
+        throw error;
+    }
+};
+
+export default {
+    createAssociate,
+    updateAssociate,
+    listAssociates,
+    requestAssociateEmailOtp,
+    verifyAssociateEmailOtp,
+    uploadAssociateDocuments,
+};

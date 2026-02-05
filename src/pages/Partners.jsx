@@ -3,8 +3,14 @@ import { motion } from "framer-motion";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import { FaHandshake, FaChartLine, FaUsers, FaArrowRight, FaRocket } from "react-icons/fa";
+import { useState } from "react";
+import PartnerSignupModal from "../components/Modals/PartnerSignupModal";
+import PartnerLoginModal from "../components/Modals/PartnerLoginModal";
 
 const Partners = () => {
+    const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
     useEffect(() => {
         AOS.init({ duration: 1000, once: true });
     }, []);
@@ -53,10 +59,16 @@ const Partners = () => {
                                     Join India's fastest-growing business network. We empower partners with the technology and support needed to scale and succeed in the digital economy.
                                 </p>
                                 <div className="flex flex-wrap gap-4">
-                                    <button className="bg-yellow-400 text-black px-8 py-3 rounded-full font-bold shadow-lg hover:bg-yellow-500 transition-all flex items-center gap-2">
+                                    <button
+                                        onClick={() => setIsSignupModalOpen(true)}
+                                        className="bg-yellow-400 text-black px-8 py-3 rounded-full font-bold shadow-lg hover:bg-yellow-500 transition-all flex items-center gap-2"
+                                    >
                                         Join Partner Program <FaArrowRight />
                                     </button>
-                                    <button className="border-2 border-black text-black px-8 py-3 rounded-full font-bold hover:bg-black hover:text-white transition-all">
+                                    <button
+                                        onClick={() => setIsLoginModalOpen(true)}
+                                        className="border-2 border-black text-black px-8 py-3 rounded-full font-bold hover:bg-black hover:text-white transition-all shadow-md active:scale-95"
+                                    >
                                         Existing Partner
                                     </button>
                                     <button className="text-gray-600 font-medium hover:text-black transition-all underline underline-offset-4">
@@ -115,7 +127,10 @@ const Partners = () => {
                         Become a part of our ecosystem today and unlock limitless opportunities for growth and innovation. Or contact us for any query.
                     </p>
                     <div className="flex flex-wrap justify-center gap-6">
-                        <button className="bg-yellow-400 text-black px-10 py-4 rounded-full font-bold text-lg hover:bg-yellow-500 transition-all shadow-xl">
+                        <button
+                            onClick={() => setIsSignupModalOpen(true)}
+                            className="bg-yellow-400 text-black px-10 py-4 rounded-full font-bold text-lg hover:bg-yellow-500 transition-all shadow-xl"
+                        >
                             Become a Partner Now
                         </button>
                         <button className="bg-transparent border-2 border-white px-10 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-black transition-all">
@@ -124,6 +139,25 @@ const Partners = () => {
                     </div>
                 </div>
             </section>
+
+            {/* Signup Modal */}
+            <PartnerSignupModal
+                isOpen={isSignupModalOpen}
+                onClose={() => setIsSignupModalOpen(false)}
+                onSwitchToLogin={() => {
+                    setIsSignupModalOpen(false);
+                    setIsLoginModalOpen(true);
+                }}
+            />
+
+            <PartnerLoginModal
+                isOpen={isLoginModalOpen}
+                onClose={() => setIsLoginModalOpen(false)}
+                onSwitchToSignup={() => {
+                    setIsLoginModalOpen(false);
+                    setIsSignupModalOpen(true);
+                }}
+            />
         </div>
     );
 };

@@ -26,7 +26,7 @@ const menuItems = [
   { name: "Company Details", path: "companydetails", icon: FileText },
   { name: "Files", path: "files", icon: Folder },
   { name: "Compliance Calendar", path: "events", icon: Briefcase },
-  { name: "Invoice", path: "invoice", icon: MessageSquare },
+  { name: "Invoice", path: "messages", icon: MessageSquare },
 ];
 
 const ProfileLayout = () => {

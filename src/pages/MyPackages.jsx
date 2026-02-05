@@ -1,22 +1,6 @@
-// Order status mapping
-const orderStatusList = [
-  { value: 1, label: 'In Progress' },
-  { value: 2, label: 'Completed' },
-  { value: 3, label: 'Pending' },
-  { value: 4, label: 'Completed, Payment Pending' },
-  { value: 5, label: 'Completed, Payment Done' },
-];
-
-const getOrderStatusLabel = (statusValue) => {
-  const found = orderStatusList.find((s) => s.value === statusValue);
-  return found ? found.label : 'Unknown';
-};
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { getOrdersByCompanyId } from "../api/Orders/Order";
+import { getPackageOrders } from "../api/Orders/Order";
 import { getSecureItem } from "../utils/secureStorage";
-import DataTable from "../components/Datatable";
-
 
 
 const PAGE_SIZE = 10;
@@ -43,7 +27,7 @@ const MyPackages = () => {
         setLoading(true);
         setError(null);
         const companyId = selectedCompany?.CompanyID || selectedCompany?.CompanyId || null;
-        const res = await getOrdersByCompanyId({ companyId, page, limit: PAGE_SIZE, IsIndividual: 0 });
+        const res = await getPackageOrders({ page, limit: PAGE_SIZE, CompanyID: companyId });
         const data = res.data || res.orders || res;
         setPackages(Array.isArray(data) ? data : []);
         const total = res.total || res.count || (res.meta && res.meta.total) || (Array.isArray(res.data) ? res.total : 0);
@@ -83,54 +67,95 @@ const MyPackages = () => {
     if (page < totalPages) setPage(page + 1);
   };
 
-  const navigate = useNavigate();
-  // Define columns for DataTable
-  const columns = [
-    { key: "OrderID", header: "Order ID" },
-    { key: "PackageName", header: "Package Name", render: (row) => row.PackageName || row.PackageTitle || "Unnamed Package" },
-    { key: "totalAmount", header: "Total Amount", render: (row) => `₹${row.TotalAmount || row.totalAmount || "N/A"}` },
-    { key: "OrderStatus", header: "Status", render: (row) => {
-      const label = getOrderStatusLabel(row.OrderStatus);
-      let colorClass = "text-gray-700";
-      if (row.OrderStatus === 1) colorClass = "text-blue-600  bg-blue-200 px-2 py-1 rounded-full";
-      if (row.OrderStatus === 2) colorClass = "text-green-600 bg-green-200 px-2 py-1 rounded-full";
-      if (row.OrderStatus === 3) colorClass = "text-yellow-600 bg-yellow-200 px-2 py-1 rounded-full";
-      if (row.OrderStatus === 4) colorClass = "text-orange-600 bg-orange-200 px-2 py-1 rounded-full";
-      if (row.OrderStatus === 5) colorClass = "text-purple-600 bg-purple-200 px-2 py-1 rounded-full";
-      return <span className={colorClass}>{label}</span>;
-    } },
-    { key: "CreatedAt", header: "Ordered On", render: (row) => row.CreatedAt ? new Date(row.CreatedAt).toLocaleDateString() : "N/A" },
-    { key: "action", header: "Action", render: (row) => (
-      <button
-        onClick={() => navigate("/dashboard/bizpoleone/orderdetails", { state: { order: row } })}
-        className="px-3 py-2 bg-yellow-500 text-black rounded-full hover:bg-yellow-600 transition"
-      >
-        View Details
-      </button>
-    ) },
-  ];
+  if (loading) {
+    return <div className="text-center py-20 text-gray-500">Loading packages...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-20 text-red-500">{error}</div>;
+  }
+
+  if (!packages.length) {
+    return <div className="text-center py-20 text-gray-500">No package orders found.</div>;
+  }
 
   return (
     <div className="container mx-auto py-12 px-4">
-      <h1 className="text-3xl font-semibold mb-2"> Package Orders</h1>
-      <h6 className="mb-6 text-gray-600">View and manage all your package orders in one place</h6>
+      <h1 className="text-3xl font-bold mb-8">My Package Orders</h1>
 
-      {loading ? (
-        <div className="text-center py-20 text-gray-500">Loading packages...</div>
-      ) : error ? (
-        <div className="text-center py-20 text-red-500">{error}</div>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={packages}
-          loading={loading}
-          error={error}
-          page={page}
-          totalPages={totalPages}
-          onPrev={handlePrev}
-          onNext={handleNext}
-        />
-      )}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {packages.map((pkg, index) => (
+          <div
+            key={index}
+            className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition duration-200"
+          >
+            <h2 className="text-xl font-semibold mb-2">
+              {pkg.PackageName || pkg.PackageTitle || "Unnamed Package"}
+            </h2>
+
+            <p className="text-gray-600 text-sm mb-2">
+              Order ID: <span className="font-medium">{pkg.OrderID || pkg.id}</span>
+            </p>
+
+            <p className="text-gray-600 text-sm mb-2">
+              Total Amount: {" "}
+              <span className="font-medium">
+                ₹{pkg.TotalAmount || pkg.totalAmount || "N/A"}
+              </span>
+            </p>
+
+            <p className="text-gray-600 text-sm mb-2">
+              Status: {" "}
+              <span
+                className={`font-medium ${
+                  pkg.Status === "Completed"
+                    ? "text-green-600"
+                    : pkg.Status === "Pending"
+                    ? "text-yellow-600"
+                    : "text-gray-600"
+                }`}
+              >
+                {pkg.Status || "Unknown"}
+              </span>
+            </p>
+
+            <p className="text-gray-600 text-sm mb-4">
+              Ordered On: {" "}
+              {pkg.CreatedDate
+                ? new Date(pkg.CreatedDate).toLocaleDateString()
+                : "N/A"}
+            </p>
+
+            <button
+              onClick={() => alert(`Viewing details for Order #${pkg.OrderID}`)}
+              className="px-5 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition"
+            >
+              View Details
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex justify-center items-center mt-8 gap-4">
+        <button
+          onClick={handlePrev}
+          disabled={page === 1}
+          className={`px-4 py-2 rounded-xl border ${page === 1 ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-gray-100"}`}
+        >
+          Previous
+        </button>
+        <span className="font-medium">
+          Page {page} of {totalPages}
+        </span>
+        <button
+          onClick={handleNext}
+          disabled={page === totalPages || totalPages === 0}
+          className={`px-4 py-2 rounded-xl border ${page === totalPages || totalPages === 0 ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-gray-100"}`}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };

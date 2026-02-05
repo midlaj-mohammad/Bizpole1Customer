@@ -46,10 +46,17 @@ import Plansandpricing from "./pages/Plansandpricing";
 import ServiceDetails from "./pages/ServiceDetails";
 import MyPackages from "./pages/MyPackages";
 import MyIndividualservices from "./pages/MyIndividualservices";
-import ChatPage from "./pages/ChatPage";
-import Invoiceprofile from "./pages/Invoiceprofile";
-import MyOrderDetails from "./pages/MyOrderDetails";
 import Partners from "./pages/Partners";
+import AssociateDashboard from "./pages/AssociateDashboard";
+import AssociateLayout from "./pages/AssociateLayout";
+import AssociateProfile from "./pages/AssociateProfile";
+import AssociateLeads from "./pages/associate/AssociateLeads";
+import AssociateDeals from "./pages/associate/AssociateDeals";
+import AssociateQuotes from "./pages/associate/AssociateQuotes";
+import AssociateOrders from "./pages/associate/AssociateOrders";
+import AssociateServices from "./pages/associate/AssociateServices";
+import AssociateCustomers from "./pages/associate/AssociateCustomers";
+import AssociateCompanies from "./pages/associate/AssociateCompanies";
 
 function App() {
   const location = useLocation();
@@ -70,6 +77,7 @@ function App() {
     "/profile",
     "/existing-companies",
     "/dashboard", // includes /dashboard and its children
+    "/associate",
   ];
 
   useEffect(() => {
@@ -119,7 +127,6 @@ function App() {
             <Route path="events" element={<ProfileEvents />} />
             <Route path="files" element={<CustomerFiles />} />
             <Route path="companydetails" element={<CompanyDetails />} />
-            <Route path="invoice" element={<Invoiceprofile />} />
 
           </Route>
 
@@ -134,20 +141,27 @@ function App() {
 
               {/* BizpoleOne Nested Dashboard */}
               <Route path="bizpoleone" element={<BizpoleOneDashboardLayout />}>
-
-
-
-              
                 <Route index element={<BizpoleOne />} /> {/* default inside bizpoleone */}
                 <Route path="package" element={<MyPackages />} />
-                <Route path="orderdetails" element={<MyOrderDetails />} />
                 <Route path="services" element={<BizpoleOneServices />} />
-                <Route path="chat" element={<ChatPage />} />
                 <Route path="orders" element={<BizpoleOneServices />} />
                 <Route path="tasks" element={<BizpoleOneTasks />} />
                 <Route path="pricing" element={<Plansandpricing />} />
                 <Route path="individual" element={<MyIndividualservices />} />
               </Route>
+            </Route>
+
+            {/* Associate Dashboard Routes */}
+            <Route path="/associate" element={<AssociateLayout />}>
+              <Route path="dashboard" element={<AssociateDashboard />} />
+              <Route path="profile" element={<AssociateProfile />} />
+              <Route path="leads" element={<AssociateLeads />} />
+              <Route path="deals" element={<AssociateDeals />} />
+              <Route path="quotes" element={<AssociateQuotes />} />
+              <Route path="orders" element={<AssociateOrders />} />
+              <Route path="services" element={<AssociateServices />} />
+              <Route path="customers" element={<AssociateCustomers />} />
+              <Route path="companies" element={<AssociateCompanies />} />
             </Route>
           </Route>
         </Routes>

@@ -5,8 +5,6 @@ import { upsertQuote } from "../api/Quote";
 import { motion } from "framer-motion";
 import { Check, Calendar } from "lucide-react";
 import { setSecureItem, getSecureItem } from "../utils/secureStorage"; // ✅ Import secure storage
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 const Subscription = () => {
   const [hoveredCard, setHoveredCard] = useState(null);
@@ -19,6 +17,7 @@ const Subscription = () => {
 
   // 🔹 Handle quote creation
   const handleQuote = async (plan) => {
+    console.log(plan, "plan");
     try {
       const data = await upsertQuote(plan);
 
@@ -30,13 +29,12 @@ const Subscription = () => {
           setSecureItem("user", user); // ✅ Encrypt and save updated user
         }
       }
-      toast.dismiss();
-      toast.success(`Quote Successfully created! QuoteCode: ${data.QuoteCode}`);
-      setTimeout(() => navigate("/dashboard/bizpoleone"), 1200);
+
+      alert(`Quote created! QuoteCode: ${data.QuoteCode}`);
+      navigate("/dashboard/bizpoleone");
     } catch (err) {
       console.error("Error creating quote:", err);
-      toast.dismiss();
-      toast.error("Failed to create quote.");
+      alert("Failed to create quote.");
     }
   };
 
@@ -55,7 +53,7 @@ const Subscription = () => {
           // 2️⃣ Else check secure localStorage
           const loc = getSecureItem("location"); // ✅ Secure get
           console.log(loc, "loc");
-
+          
           if (loc && loc.type) {
             typeId = loc.type;
           }
@@ -78,17 +76,6 @@ const Subscription = () => {
 
   return (
     <div className="w-full min-h-screen bg-white flex flex-col">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
       {/* Top Navbar */}
       <div className="w-full flex justify-start items-center p-6">
         <img

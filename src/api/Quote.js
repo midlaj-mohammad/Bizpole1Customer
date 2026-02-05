@@ -116,7 +116,7 @@ export const upsertQuote = async (plan) => {
       SourceOfSale: "Website",
       Remarks: "Generated from subscription page",
       IsIndividual: 0,
-      PackageID: plan.id || plan.PackageID,
+      PackageID: plan.id || plan.packageId,
       PackageName: plan.name || plan.PackageName || plan.packageName,
       IsMonthly: 0,
       QuoteStatus: "Draft",
