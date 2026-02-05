@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const ComplianceStatusCheck = ({ onNext, onPrev, registrationStatusObj }) => {
     // Debug: Check registrationStatus prop received from RegistrationStatusForm
-    console.log("[ComplianceStatusCheck] registrationStatus prop:s", registrationStatusObj);
+    console.log("[ComplianceStatusCheck] registrationStatus prop:s", onNext, onPrev, registrationStatusObj);
   const navigate = useNavigate(); // Initialize navigate function
   // Speech recognition hook
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
@@ -75,13 +75,19 @@ const ComplianceStatusCheck = ({ onNext, onPrev, registrationStatusObj }) => {
         expectations: form.expectationText
       };
 
-      // Merge registrationStatus prop and complianceData into one object
+      // Flatten registrationStatusObj if it contains nested registrationStatus or CompanyID
+      let flatRegistrationStatus = registrationStatusObj || {};
+      if (flatRegistrationStatus.registrationStatus) {
+        flatRegistrationStatus = flatRegistrationStatus.registrationStatus;
+      }
+      // Merge flat registration status and compliance data
       const mergedStatus = {
-        ...registrationStatus,
+        ...flatRegistrationStatus,
         ...complianceData
       };
 
-      // Get CompanyID from secureStorage/localStorage
+
+      // Get CompanyID from secureStorage/localStorage and ensure it's a number
       let CompanyID = null;
       try {
         CompanyID = window.localStorage.getItem("CompanyId");
@@ -91,8 +97,11 @@ const ComplianceStatusCheck = ({ onNext, onPrev, registrationStatusObj }) => {
           CompanyID = window.sessionStorage.getItem("CompanyId");
         } catch {}
       }
+      if (CompanyID) {
+        CompanyID = Number(CompanyID);
+      }
 
-      // Prepare final payload for API
+      // Prepare final payload for API (matches backend expectation)
       const payload = {
         CompanyID,
         registrationStatus: mergedStatus

@@ -47,7 +47,7 @@ const RegistrationStatusForm = ({ onNext, onBack }) => {
     console.log("🚀 Registration status prepared:", registrationStatusObj);
     // Pass registrationStatusObj to next step
     if (onNext) onNext(registrationStatusObj);
-  };
+  }
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-[#f5f5f5]">
