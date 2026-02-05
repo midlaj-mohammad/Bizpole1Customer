@@ -9,6 +9,14 @@ const RegistrationStatusForm = ({ onNext, onBack }) => {
     "DO YOU HAVE EPF REGISTRATION?",
     "DO YOU FILE TDS RETURNS?",
   ];
+  // Keys for the payload object
+  const statusKeys = [
+    "IECode",
+    "FSSAI",
+    "ESIRegistration",
+    "EPFRegistration",
+    "TDSReturns",
+  ];
   const [answers, setAnswers] = useState(Array(questions.length).fill(""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,21 +39,14 @@ const RegistrationStatusForm = ({ onNext, onBack }) => {
       return;
     }
 
-    setLoading(true);
-    setError("");
-
-    try {
-      console.log("🚀 Submitting registration status:", answers);
-      const result = await upsertRegistrationStatus(answers);
-      console.log("✅ Registration status saved successfully:", result);
-
-      if (onNext) onNext();
-    } catch (err) {
-      setError("Failed to save registration status.");
-      console.error("❌ Error saving registration status:", err);
-    } finally {
-      setLoading(false);
-    }
+    // Map answers to object with required keys
+    const registrationStatusObj = statusKeys.reduce((acc, key, idx) => {
+      acc[key] = answers[idx];
+      return acc;
+    }, {});
+    console.log("🚀 Registration status prepared:", registrationStatusObj);
+    // Pass registrationStatusObj to next step
+    if (onNext) onNext(registrationStatusObj);
   };
 
   return (

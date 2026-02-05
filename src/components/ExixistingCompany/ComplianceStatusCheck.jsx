@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { upsertRegistrationStatus } from "../../api/CompanyApi";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import { useNavigate } from "react-router-dom";
 
-const ComplianceStatusCheck = ({ onNext, onPrev }) => {
+const ComplianceStatusCheck = ({ onNext, onPrev, registrationStatusObj }) => {
+    // Debug: Check registrationStatus prop received from RegistrationStatusForm
+    console.log("[ComplianceStatusCheck] registrationStatus prop:s", registrationStatusObj);
   const navigate = useNavigate(); // Initialize navigate function
   // Speech recognition hook
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
@@ -62,7 +64,7 @@ const ComplianceStatusCheck = ({ onNext, onPrev }) => {
     setError("");
     try {
       // Prepare compliance data for API
-      const registrationStatusData = {
+      const complianceData = {
         gstReturns: form.gstReturns,
         gstReturnsYear: form.gstReturnsYear,
         rocFiling: form.rocFiling,
@@ -73,16 +75,37 @@ const ComplianceStatusCheck = ({ onNext, onPrev }) => {
         expectations: form.expectationText
       };
 
-      console.log("📤 Sending registration status data:", registrationStatusData);
+      // Merge registrationStatus prop and complianceData into one object
+      const mergedStatus = {
+        ...registrationStatus,
+        ...complianceData
+      };
 
-      // Call the correct API function
-      const response = await upsertRegistrationStatus(registrationStatusData);
-      console.log("✅ Registration status saved successfully:", response);
+      // Get CompanyID from secureStorage/localStorage
+      let CompanyID = null;
+      try {
+        CompanyID = window.localStorage.getItem("CompanyId");
+      } catch {}
+      if (!CompanyID && typeof window !== "undefined") {
+        try {
+          CompanyID = window.sessionStorage.getItem("CompanyId");
+        } catch {}
+      }
+
+      // Prepare final payload for API
+      const payload = {
+        CompanyID,
+        registrationStatus: mergedStatus
+      };
+
+      console.log("📤 Sending registrationStatus payload:", payload);
+
+      // Call the API function
+      const response = await upsertRegistrationStatus(payload);
+      console.log("✅ Registration & compliance status saved successfully:", response);
 
       // ✅ Navigate to dashboard after successful submission
       navigate("/", { state: { openSigninModal: true } });
- // Change this to your actual dashboard route
-      
     } catch (err) {
       console.error("❌ Error saving registration status:", err);
       setError(err.response?.data?.message || "Failed to save compliance information. Please try again.");

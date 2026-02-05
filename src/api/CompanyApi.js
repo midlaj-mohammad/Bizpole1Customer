@@ -55,6 +55,31 @@ export const getCompanyById = async (id) => {
 };
 
 /**
+ * 🔹 Get Company Details by ID
+ * Example payload:
+ * {
+ *   "CompanyId": 613
+ * }
+ */
+export const getCompanyDetails = async (companyId) => {
+  try {
+    if (!companyId) {
+      throw new Error("CompanyId is required to fetch company details");
+    }
+
+    const response = await axiosInstance.post("/company/get-details", {
+      CompanyId: companyId,
+    });
+
+    console.log("✅ Response from getCompanyDetails:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error in getCompanyDetails:", error);
+    throw error;
+  }
+};
+
+/**
  * 🔹 Add or Update Registration & Compliance Status
  */
 export const upsertRegistrationStatus = async (registrationStatusData) => {

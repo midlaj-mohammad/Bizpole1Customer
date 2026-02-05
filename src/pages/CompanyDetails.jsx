@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Building2, Mail, Phone, MapPin, Globe, FileText, Users, Calendar, CheckCircle, XCircle, Eye, Download, Share2, Edit3 } from "lucide-react";
-import { getCompanyById } from "../api/CompanyApi";
+import { getCompanyById, getCompanyDetails } from "../api/CompanyApi";
 import { getSecureItem, setSecureItem } from "../utils/secureStorage";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -31,17 +31,26 @@ const CompanyDetails = () => {
     const fetchCompany = async () => {
       setLoading(true);
       try {
-        const data = await getCompanyById(selectedCompanyId);
-        setCompany(data.data);
-      } catch (err) {
-        setError("Failed to fetch company details");
-        toast.dismiss();
-        toast.error("Failed to fetch company details");
-      } finally {
+        const response = await getCompanyDetails(selectedCompanyId);
+
+        if (response.success) {
+          const companyData = response.data;
+          setCompany(companyData);
+        } else {
+          setError("Failed to fetch company details. Please try again.");
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching company details:", error);
+        setError("Failed to fetch company details. Please try again.");
         setLoading(false);
       }
     };
-    if (selectedCompanyId) fetchCompany();
+
+    if (selectedCompanyId) {
+      fetchCompany();
+    }
   }, [selectedCompanyId]);
 
   // Handle company switch
@@ -121,8 +130,47 @@ const CompanyDetails = () => {
     </span>
   );
 
+  const renderOrders = (orders) => {
+    return orders.map((order) => (
+      <div key={order.OrderID} className="bg-white rounded-xl p-4 border border-amber-200 mb-4">
+        <h3 className="text-lg font-bold text-slate-900 mb-2">Order ID: {order.OrderID}</h3>
+        <p className="text-sm text-slate-600">Status: {order.OrderStatus}</p>
+        <p className="text-sm text-slate-600">Package: {order.PackageName || "N/A"}</p>
+        <div className="mt-2">
+          <h4 className="text-sm font-semibold text-slate-800">Services:</h4>
+          <ul className="list-disc list-inside">
+            {order.Services.map((service) => (
+              <li key={service.ServiceDetailID} className="text-sm text-slate-600">
+                {service.ItemName} - ₹{service.Total}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    ));
+  };
+
+  const renderCustomers = (customers) => {
+    return customers.map((customer) => (
+      <div key={customer.CustomerID} className="bg-white rounded-xl p-4 border border-amber-200 mb-4">
+        <h3 className="text-lg font-bold text-slate-900 mb-2">
+          {customer.FirstName} {customer.LastName}
+        </h3>
+        <p className="text-sm text-slate-600">Email: {customer.Email}</p>
+        <p className="text-sm text-slate-600">Mobile: {customer.Mobile}</p>
+      </div>
+    ));
+  };
+
+  // Adjust the logic to handle the provided response structure
+  const getPrimaryCustomerMobile = (customers) => {
+    if (!customers || customers.length === 0) return "Not provided";
+    const primaryCustomer = customers.find((customer) => customer.PrimaryCustomer === 1);
+    return primaryCustomer ? primaryCustomer.Mobile : "Not provided";
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-yellow-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
@@ -202,8 +250,18 @@ const CompanyDetails = () => {
                 Contact Information
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InfoCard icon={Mail} label="Company Email" value={company?.CompanyEmail} span />
-                <InfoCard icon={Phone} label="Company Mobile" value={company?.CompanyMobile} span />
+                <InfoCard
+                  icon={Mail}
+                  label="Company Email"
+                  value={company?.Customers?.length > 0 ? company.Customers[0].Email : "Not provided"}
+                  span
+                />
+                <InfoCard
+                  icon={Phone}
+                  label="Company Mobile"
+                        value={company?.Customers?.length > 0 ? company.Customers[0].Mobile : "Not provided"}
+                  span
+                />
               </div>
             </div>
 
@@ -255,7 +313,7 @@ const CompanyDetails = () => {
                 <InfoCard icon={FileText} label="CIN" value={company?.CIN} />
                 <InfoCard icon={FileText} label="PAN" value={company?.CompanyPAN} />
                 <InfoCard icon={FileText} label="GST Number" value={company?.GSTNumber} />
-                <InfoCard icon={FileText} label="Franchise ID" value={company?.FranchiseID} />
+                {/* <InfoCard icon={FileText} label="Franchise ID" value={company?.FranchiseID} /> */}
               </div>
             </div>
 
@@ -298,10 +356,7 @@ const CompanyDetails = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-5 text-white shadow-lg">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm opacity-90 mb-1">Agents</p>
-                    <p className="text-2xl font-bold">{company?.Agents?.length || 0}</p>
-                  </div>
+                
                   <Users className="w-8 h-8 opacity-80" />
                 </div>
               </div>
@@ -317,7 +372,7 @@ const CompanyDetails = () => {
             </div>
 
             {/* Quick Status */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-amber-200">
+            {/* <div className="bg-white rounded-2xl shadow-lg p-6 border border-amber-200">
               <h3 className="font-semibold text-slate-900 mb-4">Quick Status</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
@@ -335,7 +390,7 @@ const CompanyDetails = () => {
                   </span>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
