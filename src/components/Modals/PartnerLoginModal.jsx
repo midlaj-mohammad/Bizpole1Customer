@@ -82,11 +82,11 @@ const PartnerLoginModal = ({ isOpen, onClose, onSwitchToSignup }) => {
                     if (response.success) {
                         // Store token and user
                         if (response.token && response.user) {
-                            localStorage.setItem('token', response.token);
+                            localStorage.setItem('partnerToken', response.token); // Store partner token distinctly
                             localStorage.setItem('EmployeeID', response.user.EmployeeID);
                             localStorage.setItem('FranchiseeID', response.user.FranchiseeID);
                             localStorage.setItem('AssociateID', response.user.id);
-                            setSecureItem("user", response.user);
+                            setSecureItem("partnerUser", response.user); // Store partner user distinctly
                         }
 
                         onClose();

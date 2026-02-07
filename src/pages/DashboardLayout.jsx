@@ -114,8 +114,9 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Remove token from localStorage
-    localStorage.removeItem("token"); // change "token" if your key is different
+    // Remove partner-specific token and user data
+    localStorage.removeItem( "token");
+    localStorage.removeItem("user");
 
     // Optional: clear other user data if stored
     // localStorage.clear();

@@ -187,7 +187,7 @@ const CompanyInformationForm = ({ onNext }) => {
     }
 
     try {
-      const user = getSecureItem("user") || {};
+      const user = getSecureItem("user"||"partnerUser") || {};
       const isAssociate = user.role === "associate";
       const AssociateID = isAssociate ? user.id : null;
 

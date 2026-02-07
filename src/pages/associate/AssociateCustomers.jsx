@@ -17,7 +17,7 @@ const AssociateCustomers = () => {
     const fetchCustomers = async () => {
         setLoading(true);
         try {
-            const user = getSecureItem("user") || {};
+            const user = getSecureItem("partnerUser") || {};
             const result = await DealsApi.listAssociateCustomers({
                 page,
                 limit: pageSize,

@@ -84,7 +84,7 @@ function App() {
   ];
 
   useEffect(() => {
-    const user = getSecureItem("user");
+    const user = getSecureItem("user" || "partnerUser");
     if (typeof user === "string") {
       try {
         const parsed = JSON.parse(user);

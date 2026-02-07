@@ -38,11 +38,17 @@ const AddDealModal = ({ isOpen, onClose, onSuccess }) => {
         companyPreferredLanguage: "",
     });
 
+
+    console.log({formData});
+    
+
     const [availableCompanyDistricts, setAvailableCompanyDistricts] = useState([]);
     const [serviceCategories, setServiceCategories] = useState([]);
     const [availableServices, setAvailableServices] = useState([]);
     const [availableStates, setAvailableStates] = useState([]); // States for service location
     const [servicePricing, setServicePricing] = useState([]); // Pricing data for selected services
+
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     useEffect(() => {
         if (formData.state) {
@@ -70,9 +76,9 @@ const AddDealModal = ({ isOpen, onClose, onSuccess }) => {
     useEffect(() => {
         const fetchServiceCategories = async () => {
             try {
-                const response = await fetch('http://localhost:3000/service-category?limit=100', {
+                const response = await fetch(`${API_BASE_URL}/service-category?page=1&limit=100`, {
                     headers: {
-                        'Authorization': `Bearer ${getSecureItem('token')}`
+                        'Authorization': `Bearer ${getSecureItem('partnerToken')}`
                     }
                 });
                 const data = await response.json();
@@ -98,9 +104,9 @@ const AddDealModal = ({ isOpen, onClose, onSuccess }) => {
             }
 
             try {
-                const response = await fetch(`http://localhost:3000/service-categories/${formData.serviceCategory}?limit=100`, {
+                const response = await fetch(`${API_BASE_URL}/service-categories/${formData.serviceCategory}?limit=100`, {
                     headers: {
-                        'Authorization': `Bearer ${getSecureItem('token')}`
+                        'Authorization': `Bearer ${getSecureItem('partnerToken')}`
                     }
                 });
                 const data = await response.json();
@@ -120,7 +126,7 @@ const AddDealModal = ({ isOpen, onClose, onSuccess }) => {
     useEffect(() => {
         const fetchStates = async () => {
             try {
-                const response = await fetch('http://localhost:3000/states');
+                const response = await fetch(`${API_BASE_URL}/states`);
                 const data = await response.json();
                 if (data.success) {
                     setAvailableStates(data.data || []);
@@ -144,23 +150,22 @@ const AddDealModal = ({ isOpen, onClose, onSuccess }) => {
             }
 
             try {
-                // Find the selected state ID
                 const selectedState = availableStates.find(s => s.state_name === formData.serviceState);
                 if (!selectedState) {
                     console.log('State not found:', formData.serviceState);
                     return;
                 }
 
-                const response = await fetch('http://localhost:3000/service-price-currency/bulk', {
+                const response = await fetch(`${API_BASE_URL}/service-price-currency?StateName=Kerala&ServiceID=256`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${getSecureItem('token')}`
+                        'Authorization': `Bearer ${getSecureItem('partnerToken')}`
                     },
                     body: JSON.stringify({
                         StateID: selectedState.ID,
                         ServiceIDs: formData.selectedServices,
-                        isIndividual: 1, // For individual pricing
+                        isIndividual: 1,
                         packageId: null,
                         yearly: 0
                     })
@@ -242,7 +247,7 @@ const AddDealModal = ({ isOpen, onClose, onSuccess }) => {
 
         setIsSubmitting(true);
         try {
-            const user = getSecureItem("user") || {};
+            const user = getSecureItem("partnerUser") || {};
 
             // Map selected services with their pricing details
             const servicesPayload = formData.selectedServices.map(serviceId => {

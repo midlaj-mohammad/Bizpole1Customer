@@ -19,7 +19,7 @@ const AssociateDeals = () => {
     const fetchDeals = async () => {
         setLoading(true);
         try {
-            const user = getSecureItem("user") || {};
+            const user = getSecureItem("partnerUser") || {};
             const result = await DealsApi.listDeals({
                 employeeId: user.EmployeeID,
                 franchiseId: user.FranchiseeID,
@@ -55,6 +55,11 @@ const AssociateDeals = () => {
 
             const user = getSecureItem("user") || {};
             const AssociateID = localStorage.getItem("AssociateID");
+            const token = localStorage.getItem("partnerToken"); // Use partner token
+            if (!token) {
+                console.error("Partner token is missing. Authorization failed.");
+                return;
+            }
 
             // Transform deal data into quote payload format
             const quotePayload = {
@@ -64,6 +69,10 @@ const AssociateDeals = () => {
                 name: deal.name,
                 isAssociate: 1,
                 AssociateID: parseInt(AssociateID),
+                SelectedCompany:{
+                    CompanyID: deal.CompanyID || 1,
+                    CompanyName: deal.CompanyName || "Default Company"
+                },
                 services: deal.DealServices?.map(service => {
                     console.log('service from deal:', service);
                     return {
@@ -79,6 +88,9 @@ const AssociateDeals = () => {
                     };
                 }) || [],
             };
+
+            console.log("BBBBB", {quotePayload});
+            
 
             const result = await upsertQuote(quotePayload);
 

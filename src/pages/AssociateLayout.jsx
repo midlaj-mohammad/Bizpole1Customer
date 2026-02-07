@@ -22,15 +22,16 @@ const AssociateLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const user = getSecureItem("user") || { username: "Associate" };
+    const user = getSecureItem("partnerUser") || { username: "Associate" };
 
     const handleLogoutClick = () => {
         setShowLogoutModal(true);
     };
 
     const confirmLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        // Remove partner-specific token and user data
+        localStorage.removeItem("partnerToken");
+        localStorage.removeItem("partnerUser");
         navigate("/");
     };
 

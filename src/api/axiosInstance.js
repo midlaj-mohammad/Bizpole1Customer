@@ -17,7 +17,7 @@ export const api = axios.create({
 // Add interceptor to inject token from localStorage
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("partnerToken") || localStorage.getItem("token")
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }

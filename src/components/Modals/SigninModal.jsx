@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -97,11 +96,13 @@ const SigninModal = ({ isOpen = true, onClose = () => { } }) => {
           // Store token and user in localStorage
           if (tokenData && tokenData.token) {
             console.log(tokenData, "token");
-            localStorage.setItem('token', tokenData.token);
+            const storageKey = mode === "signin" ? "customerToken" : "partnerToken"; // Distinguish between customer and partner tokens
+            localStorage.setItem(storageKey, tokenData.token);
             setSignedMessage("Signed in successfully!");
           }
           if (tokenData && tokenData.user) {
-            setSecureItem('user', JSON.stringify(tokenData.user));
+            const userKey = mode === "signin" ? "customerUser" : "partnerUser"; // Distinguish between customer and partner users
+            setSecureItem(userKey, JSON.stringify(tokenData.user));
           }
 
           setStep(3);

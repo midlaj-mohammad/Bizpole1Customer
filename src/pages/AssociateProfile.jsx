@@ -5,10 +5,16 @@ import axiosInstance from '../api/axiosInstance';
 import { getAssociateById, getAssociateDocuments, uploadAssociateDocuments } from '../api/AssociateApi';
 
 const AssociateProfile = () => {
-    const user = getSecureItem("user") || { username: "Associate" };
+    const user = getSecureItem("partnerUser") ;
+
+    const URL = import.meta.env.VITE_URL
+
+    
     const [userData, setUserData] = useState();
     const [documents, setDocuments] = useState([]);
 
+    console.log({user});
+    
     const fileInputRef = useRef(null);
     const [selectedDocType, setSelectedDocType] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -56,32 +62,35 @@ const AssociateProfile = () => {
         }
     };
 
-    const handleFileChange = async (e) => {
-        const file = e.target.files[0];
-        if (!file || !selectedDocType) return;
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !selectedDocType) return;
 
-        setUploading(true);
-        const formData = new FormData();
-        formData.append('associateId', user.id);
-        // The API expects specific field names: 'pan', 'aadhaar', 'gst'
-        // My requiredDocuments types are 'PAN', 'AADHAAR', 'GST'
-        // I need to convert to lowercase for the field name
-        formData.append(selectedDocType.toLowerCase(), file);
+    setUploading(true);
 
-        try {
-            await uploadAssociateDocuments(formData);
-            // Refresh documents
-            fetchUserData();
-            alert("Document uploaded successfully!");
-        } catch (error) {
-            console.error("Upload failed", error);
-            alert("Failed to upload document.");
-        } finally {
-            setUploading(false);
-            setSelectedDocType(null);
-            e.target.value = ''; // Reset input
-        }
-    };
+    const formData = new FormData();
+    formData.append('associateId', user.id);
+    formData.append(selectedDocType.toLowerCase(), file);
+
+    try {
+        await uploadAssociateDocuments(formData);
+
+        // small delay for backend processing
+        await new Promise(res => setTimeout(res, 500));
+
+        await fetchUserData();
+
+        alert("Document uploaded successfully!");
+    } catch (error) {
+        console.error("Upload failed", error);
+        alert("Failed to upload document.");
+    } finally {
+        setUploading(false);
+        setSelectedDocType(null);
+        e.target.value = '';
+    }
+};
+
 
     const requiredDocuments = [
         { type: "PAN", name: "PAN Card", icon: FileText },
@@ -244,7 +253,7 @@ const AssociateProfile = () => {
                         <div className="flex flex-col items-center space-y-4">
                             <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
                                 <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://localhost:5173?ref=${user.id}`}
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${URL}?ref=${user.id}`}
                                     alt="Associate QR Code"
                                     className="w-48 h-48 object-contain"
                                 />
@@ -256,7 +265,7 @@ const AssociateProfile = () => {
                                 <button
                                     onClick={async () => {
                                         try {
-                                            const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://localhost:5173?ref=${user.id}`);
+                                            const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${URL}?ref=${user.id}`);
                                             const blob = await response.blob();
                                             const url = window.URL.createObjectURL(blob);
                                             const link = document.createElement('a');
@@ -280,7 +289,7 @@ const AssociateProfile = () => {
                                             navigator.share({
                                                 title: 'My Associate Profile',
                                                 text: 'Check out my associate profile on Bizpole',
-                                                url: `http://localhost:5173?ref=${user.id}`
+                                                url: `${URL}?ref=${user.id}`
                                             }).catch(console.error);
                                         } else {
                                             alert("Share not supported on this device/browser");
@@ -293,7 +302,7 @@ const AssociateProfile = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        navigator.clipboard.writeText(`http://localhost:5173?ref=${user.id}`);
+                                        navigator.clipboard.writeText(`${URL}?ref=${user.id}`);
                                         alert("Link copied to clipboard!");
                                     }}
                                     className="flex-1 flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-600 hover:text-[#4b49ac]"

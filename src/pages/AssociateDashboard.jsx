@@ -15,7 +15,7 @@ import {
 import { getSecureItem } from '../utils/secureStorage';
 
 const AssociateDashboard = () => {
-    const user = getSecureItem("user") || { username: "Associate" };
+    const user = getSecureItem("partnerUser") || { username: "Associate" };
 
 
     const stats = [

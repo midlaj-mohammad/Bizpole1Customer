@@ -93,8 +93,8 @@ export const uploadAssociateDocuments = async (formData) => {
     console.log("checking...");
     console.log({ formData });
 
-    console.log(localStorage.getItem("token"));
-
+    const token = localStorage.getItem("partnerToken"); // Use partner token
+    console.log(token);
 
     try {
         const response = api.post(
@@ -102,7 +102,7 @@ export const uploadAssociateDocuments = async (formData) => {
             formData,
             {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                    Authorization: `Bearer ${token}`
                 }
             }
         );

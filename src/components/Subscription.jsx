@@ -23,7 +23,7 @@ const Subscription = () => {
 
       // If QuoteID is present, update user securely
       if (data && data.QuoteID) {
-        const user = getSecureItem("user"); // ✅ Decrypt and get user
+        const user = getSecureItem("user" || "partnerUser"); // ✅ Decrypt and get user
         if (user) {
           user.QuoteID = data.QuoteID;
           setSecureItem("user", user); // ✅ Encrypt and save updated user

@@ -15,7 +15,7 @@ const AssociateQuotes = () => {
     const fetchQuotes = async () => {
         setLoading(true);
         try {
-            const user = getSecureItem("user") || {};
+            const user = getSecureItem("partnerUser") || {};
             const companyId = user.Companies?.[0]?.CompanyID || null;
             const AssociateID = localStorage.getItem("AssociateID");
 
