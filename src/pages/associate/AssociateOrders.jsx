@@ -3,6 +3,7 @@ import { Search, Filter, Loader2, Eye, FileText, ChevronLeft, ChevronRight, Edit
 import { getSecureItem } from '../../utils/secureStorage';
 import { format, differenceInDays } from 'date-fns';
 import { listOrders } from '../../api/Orders/Order';
+import { useNavigate } from 'react-router-dom';
 
 const AssociateOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -11,6 +12,8 @@ const AssociateOrders = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalOrders, setTotalOrders] = useState(0);
     const pageSize = 10;
+
+    const navigate = useNavigate();
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -156,7 +159,12 @@ const AssociateOrders = () => {
                                     return (
                                         <tr key={order.OrderID} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="px-4 py-4 text-center text-slate-400">{(currentPage - 1) * pageSize + index + 1}</td>
-                                            <td className="px-4 py-4 font-bold text-slate-700 whitespace-nowrap">{order.OrderCodeId || `--`}</td>
+                                            <td
+                                                className="px-4 py-4 font-bold text-[#4b49ac] hover:underline cursor-pointer whitespace-nowrap"
+                                                onClick={() => navigate(`/associate/orders/${order.OrderID}`)}
+                                            >
+                                                {order.OrderCodeId || `--`}
+                                            </td>
                                             <td className="px-4 py-4 text-slate-500 whitespace-nowrap">
                                                 {order.OrderCreatedAt ? format(new Date(order.OrderCreatedAt), "dd/MM/yyyy") : "--"}
                                             </td>

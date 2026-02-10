@@ -16,6 +16,21 @@ export const listOrders = async (filters) => {
   }
 };
 
+/**
+ * Get order details by ID
+ * @param {string|number} orderId
+ * @returns {Promise<Object>} - { success, data: { ... } }
+ */
+export const getOrderById = async (orderId) => {
+  try {
+    const response = await axiosInstance.get(`/order/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error getting order by ID:", error);
+    throw error;
+  }
+};
+
 
 // 🔹 Fetch orders for a specific companyId (bypassing storage)
 
