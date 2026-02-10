@@ -5,16 +5,16 @@ import axiosInstance from '../api/axiosInstance';
 import { getAssociateById, getAssociateDocuments, uploadAssociateDocuments } from '../api/AssociateApi';
 
 const AssociateProfile = () => {
-    const user = getSecureItem("partnerUser") ;
+    const user = getSecureItem("partnerUser");
 
     const URL = import.meta.env.VITE_URL
 
-    
+
     const [userData, setUserData] = useState();
     const [documents, setDocuments] = useState([]);
 
-    console.log({user});
-    
+    console.log({ user });
+
     const fileInputRef = useRef(null);
     const [selectedDocType, setSelectedDocType] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -43,6 +43,9 @@ const AssociateProfile = () => {
                 const userDataResponse = await getAssociateById(user.id);
                 setUserData(userDataResponse.data);
 
+                console.log({ userDataResponse });
+
+
                 const docsResponse = await getAssociateDocuments(user.id);
                 setDocuments(docsResponse.data || []);
             }
@@ -62,34 +65,34 @@ const AssociateProfile = () => {
         }
     };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !selectedDocType) return;
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !selectedDocType) return;
 
-    setUploading(true);
+        setUploading(true);
 
-    const formData = new FormData();
-    formData.append('associateId', user.id);
-    formData.append(selectedDocType.toLowerCase(), file);
+        const formData = new FormData();
+        formData.append('associateId', user.id);
+        formData.append(selectedDocType.toLowerCase(), file);
 
-    try {
-        await uploadAssociateDocuments(formData);
+        try {
+            await uploadAssociateDocuments(formData);
 
-        // small delay for backend processing
-        await new Promise(res => setTimeout(res, 500));
+            // small delay for backend processing
+            await new Promise(res => setTimeout(res, 500));
 
-        await fetchUserData();
+            await fetchUserData();
 
-        alert("Document uploaded successfully!");
-    } catch (error) {
-        console.error("Upload failed", error);
-        alert("Failed to upload document.");
-    } finally {
-        setUploading(false);
-        setSelectedDocType(null);
-        e.target.value = '';
-    }
-};
+            alert("Document uploaded successfully!");
+        } catch (error) {
+            console.error("Upload failed", error);
+            alert("Failed to upload document.");
+        } finally {
+            setUploading(false);
+            setSelectedDocType(null);
+            e.target.value = '';
+        }
+    };
 
 
     const requiredDocuments = [
