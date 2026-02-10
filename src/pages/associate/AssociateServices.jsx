@@ -3,8 +3,10 @@ import { Search, Filter, Loader2, Calendar, Hash, Building2, User, ChevronLeft, 
 import { getSecureItem } from '../../utils/secureStorage';
 import { format, differenceInDays } from 'date-fns';
 import { listOrders } from '../../api/Orders/Order';
+import { useNavigate } from 'react-router-dom';
 
 const AssociateServices = () => {
+    const navigate = useNavigate();
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -203,7 +205,12 @@ const AssociateServices = () => {
                                     return (
                                         <tr key={`${info.OrderID}_${service.ServiceID}_${index}`} className="hover:bg-slate-50/50 transition-colors group">
                                             <td className="px-4 py-3 text-center text-slate-400 font-medium">{index + 1}</td>
-                                            <td className="px-4 py-3 font-bold text-[#4b49ac] hover:underline cursor-pointer">{service.service_code || `SV${String(service.ServiceID).padStart(4, '0')}`}</td>
+                                            <td
+                                                className="px-4 py-3 font-bold text-[#4b49ac] hover:underline cursor-pointer"
+                                                onClick={() => navigate(`/associate/services/${service.ServiceDetailID}`)}
+                                            >
+                                                {service.service_code || `SV${String(service.ServiceID).padStart(4, '0')}`}
+                                            </td>
                                             <td className="px-4 py-3 text-slate-700 font-semibold">{info.OrderCodeId || '--'}</td>
                                             <td className="px-4 py-3 text-slate-500">
                                                 {info.OrderCreatedAt ? format(new Date(info.OrderCreatedAt), "yyyy-MM-dd HH:mm:ss") : "--"}

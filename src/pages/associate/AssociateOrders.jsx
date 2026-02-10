@@ -29,6 +29,9 @@ const AssociateOrders = () => {
                 search: searchTerm
             });
 
+            console.log("response", response);
+
+
             if (response.success) {
                 setOrders(response.data);
                 setTotalOrders(response.total);
