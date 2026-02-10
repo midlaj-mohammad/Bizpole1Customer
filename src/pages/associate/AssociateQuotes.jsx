@@ -32,14 +32,26 @@ const AssociateQuotes = () => {
         setLoading(true);
         try {
             const user = getSecureItem("partnerUser") || {};
+            const AssociateID = user.id || localStorage.getItem("AssociateID");
+
+            // 1) Fetch deals
             const result = await DealsApi.listDeals({
                 isAssociate: true,
-                AssociateID: user.id || localStorage.getItem("AssociateID"),
+                AssociateID: AssociateID,
             });
 
+            // 2) Fetch quotes to filter out deals that already have quotes
+            const quotesResponse = await axiosInstance.post('/getLatestQuotes', {
+                AssociateID: AssociateID,
+                isAssociate: true
+            });
+            const existingQuoteDealIds = (quotesResponse.data?.data || []).map(q => q.DealID).filter(Boolean);
+
             if (result.success) {
-                // Filter only requested deals
-                const requestedDeals = result.data.filter(d => d.associate_request === 1);
+                // Filter requested deals AND those that don't have a quote yet
+                const requestedDeals = result.data.filter(d =>
+                    d.associate_request === 1 && !existingQuoteDealIds.includes(d.id)
+                );
                 setDeals(requestedDeals);
 
                 // Fetch company names

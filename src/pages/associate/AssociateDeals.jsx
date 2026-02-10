@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2, Search, Filter, Loader2, MoreVertical, ExternalLin
 import DealsApi from '../../api/DealsApi';
 import { getSecureItem } from '../../utils/secureStorage';
 import { format } from 'date-fns';
+import axiosInstance from '../../api/axiosInstance';
 import { upsertQuote } from '../../api/Quote';
 
 const AssociateDeals = () => {
@@ -19,6 +20,7 @@ const AssociateDeals = () => {
     const [deletingDeal, setDeletingDeal] = useState(null); // Track which deal is being deleted
 
     const [companyNames, setCompanyNames] = useState({});
+    const [existingQuoteDealIds, setExistingQuoteDealIds] = useState([]);
 
     const fetchCompanyNames = async (dealsList) => {
         const uniqueCompanyIds = [...new Set(dealsList.map(d => d.CompanyID).filter(id => id && !companyNames[id]))];
@@ -50,6 +52,16 @@ const AssociateDeals = () => {
                 isAssociate: true, // Filter specifically for associate created deals
                 AssociateID: user.id || null
             });
+
+            // Fetch quotes to check for existing quotes
+            const AssociateID = user.id || localStorage.getItem("AssociateID");
+            const quotesResponse = await axiosInstance.post('/getLatestQuotes', {
+                AssociateID: AssociateID,
+                isAssociate: true
+            });
+            const quoteDealIds = (quotesResponse.data?.data || []).map(q => q.DealID).filter(Boolean);
+            setExistingQuoteDealIds(quoteDealIds);
+
             if (result.success) {
                 const dealsData = result.data || [];
                 setDeals(dealsData);
@@ -293,23 +305,25 @@ const AssociateDeals = () => {
                                             {/* ACTION COLUMN */}
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={() => handleCreateQuote(deal)}
-                                                        disabled={creatingQuote === deal.id || deal.associate_request === 1}
-                                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-1.5 ${deal.associate_request === 1
-                                                            ? "bg-slate-100 text-slate-500"
-                                                            : "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                                                            }`}
-                                                    >
-                                                        {creatingQuote === deal.id ? (
-                                                            <>
-                                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                                                Requesting...
-                                                            </>
-                                                        ) : (
-                                                            deal.associate_request === 1 ? "Requested" : "Request Quote"
-                                                        )}
-                                                    </button>
+                                                    {!existingQuoteDealIds.includes(deal.id) && (
+                                                        <button
+                                                            onClick={() => handleCreateQuote(deal)}
+                                                            disabled={creatingQuote === deal.id || deal.associate_request === 1}
+                                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-1.5 ${deal.associate_request === 1
+                                                                ? "bg-slate-100 text-slate-500"
+                                                                : "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                                                                }`}
+                                                        >
+                                                            {creatingQuote === deal.id ? (
+                                                                <>
+                                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                                    Requesting...
+                                                                </>
+                                                            ) : (
+                                                                deal.associate_request === 1 ? "Requested" : "Request Quote"
+                                                            )}
+                                                        </button>
+                                                    )}
 
                                                     <button
                                                         onClick={() => handleEdit(deal)}
