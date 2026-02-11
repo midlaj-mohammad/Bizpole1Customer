@@ -13,7 +13,9 @@ import {
     Bell,
     ChevronRight,
     Key,
-    Shield
+    Shield,
+    Receipt,
+    FileSpreadsheet
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { getSecureItem } from '../utils/secureStorage';
@@ -44,6 +46,8 @@ const AssociateLayout = () => {
         { id: 'services', path: '/associate/services', icon: <Briefcase className="w-5 h-5" />, label: 'Services' },
         { id: 'customers', path: '/associate/customers', icon: <Users className="w-5 h-5" />, label: 'Customers' },
         { id: 'companies', path: '/associate/companies', icon: <Briefcase className="w-5 h-5" />, label: 'Companies' },
+        { id: 'receipts', path: '/associate/receipts', icon: <Receipt className="w-5 h-5" />, label: 'Receipts' },
+        { id: 'invoices', path: '/associate/invoices', icon: <FileSpreadsheet className="w-5 h-5" />, label: 'Invoices' },
     ];
 
     const isActive = (path) => {

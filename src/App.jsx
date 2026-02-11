@@ -62,6 +62,8 @@ import CustomerDetailView from "./pages/associate/CustomerDetailView";
 import CompanyDetailView from "./pages/associate/CompanyDetailView";
 import OrderDetailView from "./pages/associate/OrderDetailView";
 import ServiceDetailView from "./pages/associate/ServiceDetailView";
+import AssociateReceipts from "./pages/associate/AssociateReceipts";
+import AssociateInvoices from "./pages/associate/AssociateInvoices";
 
 function App() {
   const location = useLocation();
@@ -172,6 +174,8 @@ function App() {
               <Route path="customers/:id" element={<CustomerDetailView />} />
               <Route path="companies" element={<AssociateCompanies />} />
               <Route path="companies/:id" element={<CompanyDetailView />} />
+              <Route path="receipts" element={<AssociateReceipts />} />
+              <Route path="invoices" element={<AssociateInvoices />} />
             </Route>
           </Route>
         </Routes>
