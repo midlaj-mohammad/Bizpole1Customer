@@ -137,7 +137,7 @@ const AssociateOrders = () => {
                                 <th className="px-4 py-4">Created On</th>
                                 <th className="px-4 py-4">Updated On</th>
                                 <th className="px-4 py-4">Created By</th>
-                                <th className="px-4 py-4 text-right">Actions</th>
+                                {/* <th className="px-4 py-4 text-right">Actions</th> */}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -204,7 +204,7 @@ const AssociateOrders = () => {
                                                 {order.OrderUpdatedAt ? format(new Date(order.OrderUpdatedAt), "dd/MM/yyyy") : "-"}
                                             </td>
                                             <td className="px-4 py-4 text-slate-500">{order.CreatedBy || "-"}</td>
-                                            <td className="px-4 py-4 text-right">
+                                            {/* <td className="px-4 py-4 text-right">
                                                 <div className="flex justify-end gap-1">
                                                     <button className="p-1.5 text-slate-400 hover:text-[#4b49ac] hover:bg-slate-100 rounded-lg transition-all">
                                                         <Edit2 className="w-3 h-3" />
@@ -213,7 +213,7 @@ const AssociateOrders = () => {
                                                         <Trash2 className="w-3 h-3" />
                                                     </button>
                                                 </div>
-                                            </td>
+                                            </td> */}
                                         </tr>
                                     );
                                 })

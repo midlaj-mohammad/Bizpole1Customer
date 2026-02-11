@@ -47,7 +47,8 @@ const AssociateLayout = () => {
         { id: 'customers', path: '/associate/customers', icon: <Users className="w-5 h-5" />, label: 'Customers' },
         { id: 'companies', path: '/associate/companies', icon: <Briefcase className="w-5 h-5" />, label: 'Companies' },
         { id: 'receipts', path: '/associate/receipts', icon: <Receipt className="w-5 h-5" />, label: 'Receipts' },
-        { id: 'invoices', path: '/associate/invoices', icon: <FileSpreadsheet className="w-5 h-5" />, label: 'Invoices' },
+        { id: 'explore-services', path: '/associate/explore-services', icon: <FileText className="w-5 h-5" />, label: 'Explore' },
+        // { id: 'invoices', path: '/associate/invoices', icon: <FileSpreadsheet className="w-5 h-5" />, label: 'Invoices' },
     ];
 
     const isActive = (path) => {

@@ -157,6 +157,20 @@ export const getAssociateReceiptDetails = async (paymentId) => {
     }
 };
 
+/**
+ * Get invoices for an order or quote
+ * @param {Object} params - { orderId, quoteId }
+ */
+export const getInvoicesForService = async (params) => {
+    try {
+        const response = await axiosInstance.post("/getinvoiceforservice", params);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching invoices:", error);
+        throw error;
+    }
+};
+
 export default {
     createAssociate,
     updateAssociate,
@@ -166,6 +180,7 @@ export default {
     uploadAssociateDocuments,
     listAssociateReceipts,
     getAssociateReceiptDetails,
+    getInvoicesForService
 };
 
 

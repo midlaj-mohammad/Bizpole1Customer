@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { getOrderById } from '../../api/Orders/Order';
 import { format } from 'date-fns';
-import { listAssociateReceipts, getAssociateReceiptDetails } from '../../api/AssociateApi';
+import { listAssociateReceipts, getAssociateReceiptDetails, getInvoicesForService } from '../../api/AssociateApi';
 import { getSecureItem } from '../../utils/secureStorage';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -20,6 +20,8 @@ const OrderDetailView = () => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Summary');
+    const [invoices, setInvoices] = useState([]);
+    const [invoiceLoading, setInvoiceLoading] = useState(false);
 
     // Receipt Tab State
     const [receipts, setReceipts] = useState([]);
@@ -61,7 +63,13 @@ const OrderDetailView = () => {
         if (activeTab === 'Receipts' && order) {
             fetchReceipts();
         }
+
+        if (activeTab === 'Invoice' && order) {
+            fetchInvoices();
+        }
+
     }, [activeTab, order]);
+
 
     const fetchReceipts = async () => {
         if (!order) return;
@@ -87,6 +95,34 @@ const OrderDetailView = () => {
             setReceiptsLoading(false);
         }
     };
+
+
+    const fetchInvoices = async () => {
+        if (!order) return;
+
+        setInvoiceLoading(true);
+        try {
+            const response = await getInvoicesForService({
+                quoteId: order.QuoteID,
+                orderId: order.OrderID
+            });
+
+            console.log("Invoice API Response:", response);
+
+            if (response.success) {
+                setInvoices(response.data || []);
+            } else {
+                setInvoices([]);
+            }
+
+        } catch (error) {
+            console.error("fetchInvoices error", error);
+            setInvoices([]);
+        } finally {
+            setInvoiceLoading(false);
+        }
+    };
+
 
     const handleViewReceipt = async (paymentId) => {
         setDetailLoading(true);
@@ -422,6 +458,96 @@ const OrderDetailView = () => {
                             </div>
                         )}
                     </div>
+                ) : activeTab === 'Invoice' ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                            <h3 className="text-sm font-bold text-slate-700">
+                                Invoices for Order: {order?.OrderCodeId}
+                            </h3>
+                        </div>
+
+                        {invoiceLoading ? (
+                            <div className="px-6 py-12 text-center text-slate-400">
+                                <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#4b49ac]" />
+                                <p className="mt-2">Loading invoices...</p>
+                            </div>
+                        ) : invoices.length === 0 ? (
+                            <div className="px-6 py-12 text-center text-slate-400">
+                                No invoices found for this order.
+                            </div>
+                        ) : (
+                            <>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider">
+                                                <th className="px-6 py-4">S.No</th>
+                                                <th className="px-6 py-4">Invoice ID</th>
+                                                <th className="px-6 py-4">Invoice Date</th>
+                                                <th className="px-6 py-4">Invoice Value</th>
+                                                <th className="px-6 py-4">Service Name</th>
+                                                <th className="px-6 py-4">Cancellation Reason</th>
+                                                <th className="px-6 py-4 text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody className="divide-y divide-slate-200">
+                                            {invoices.map((invoice, index) => (
+                                                <tr key={invoice.InvoiceID} className="hover:bg-slate-50 transition-colors">
+
+                                                    <td className="px-6 py-4 text-slate-600">
+                                                        {index + 1}
+                                                    </td>
+
+                                                    <td className="px-6 py-4 font-semibold text-slate-800">
+                                                        {invoice.InvoiceCode || "-"}
+                                                    </td>
+
+                                                    <td className="px-6 py-4 text-slate-600">
+                                                        {invoice.InvoiceDate
+                                                            ? format(new Date(invoice.InvoiceDate), "M/d/yyyy")
+                                                            : "-"}
+                                                    </td>
+
+                                                    <td className="px-6 py-4 font-medium text-slate-800">
+                                                        ₹{Number(invoice.InvoiceValue || 0).toLocaleString('en-IN', {
+                                                            minimumFractionDigits: 2
+                                                        })}
+                                                    </td>
+
+                                                    <td className="px-6 py-4 text-slate-600">
+                                                        {invoice.ServiceName || "-"}
+                                                    </td>
+
+                                                    <td className="px-6 py-4 text-slate-600">
+                                                        {invoice.CancellationReason || "-"}
+                                                    </td>
+
+                                                    <td className="px-6 py-4 text-center">
+                                                        <button
+                                                            className="text-slate-500 hover:text-blue-600 transition-colors"
+                                                            title="Download Invoice"
+                                                        >
+                                                            <Download className="w-4 h-4" />
+                                                        </button>
+                                                    </td>
+
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Footer */}
+                                <div className="px-6 py-3 border-t border-slate-200 text-xs text-slate-500 text-center">
+                                    Showing {invoices.length} invoice{invoices.length !== 1 && "s"}
+                                </div>
+                            </>
+                        )}
+                    </div>
+
                 ) : (
                     <div className="bg-white rounded-2xl border border-slate-200 border-dashed p-16 text-center animate-in fade-in duration-500">
                         <Activity className="w-12 h-12 text-slate-200 mx-auto mb-4" />

@@ -282,7 +282,7 @@ const AssociateReceipts = () => {
                                     <tr key={receipt.PaymentID} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-4 py-4 text-center text-slate-400">{(currentPage - 1) * pageSize + index + 1}</td>
                                         <td className="px-4 py-4 font-bold text-slate-700">{receipt.PaymentID}</td>
-                                        <td className="px-4 py-4 text-slate-500">{receipt.QuoteCode || receipt.QuoteID}</td>
+                                        <td className="px-4 py-4 text-slate-500">{receipt.QuoteID}</td>
                                         <td className="px-4 py-4 text-right font-bold text-slate-800">₹{parseFloat(receipt.TotalAmount || 0).toFixed(2)}</td>
                                         <td className="px-4 py-4 text-right text-slate-600">₹{parseFloat(receipt.GovFee || 0).toFixed(2)}</td>
                                         <td className="px-4 py-4 text-right text-slate-600">₹{parseFloat(receipt.VendorFee || 0).toFixed(2)}</td>

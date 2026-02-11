@@ -27,6 +27,8 @@ const CustomerDetailView = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('Summary');
 
+
+
     useEffect(() => {
         const fetchCustomerDetails = async () => {
             setLoading(true);
@@ -79,6 +81,10 @@ const CustomerDetailView = () => {
             </div>
         );
     }
+
+
+    console.log("customer", customer);
+
 
     const renderSummary = () => (
         <div className="bg-white rounded-2xl p-8 border border-amber-200 shadow-sm">

@@ -64,6 +64,7 @@ import OrderDetailView from "./pages/associate/OrderDetailView";
 import ServiceDetailView from "./pages/associate/ServiceDetailView";
 import AssociateReceipts from "./pages/associate/AssociateReceipts";
 import AssociateInvoices from "./pages/associate/AssociateInvoices";
+import ExploreServices from "./pages/associate/ExploreServices";
 
 function App() {
   const location = useLocation();
@@ -176,6 +177,7 @@ function App() {
               <Route path="companies/:id" element={<CompanyDetailView />} />
               <Route path="receipts" element={<AssociateReceipts />} />
               <Route path="invoices" element={<AssociateInvoices />} />
+              <Route path="explore-services" element={<ExploreServices />} />
             </Route>
           </Route>
         </Routes>
