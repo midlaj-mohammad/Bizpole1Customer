@@ -113,8 +113,11 @@ const AssociateCompanies = () => {
                                             {company.PrimaryCustomerID ? `F${company.FranchiseID}/C${String(company.PrimaryCustomerID).padStart(7, "0")}` : 'null'}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-[#4b49ac] font-medium hover:underline cursor-pointer">
-                                            {company.PrimaryCustomerName || '-'}
+                                            {company.PrimaryCustomerName?.trim()
+                                                ? company.PrimaryCustomerName
+                                                : company.BusinessName || '-'}
                                         </td>
+
                                         <td className="px-6 py-4 text-sm text-gray-600">{company.Origin || '-'}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600 text-center">{company.activeOrders || 0}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600 text-center">{company.totalOrders || 0}</td>

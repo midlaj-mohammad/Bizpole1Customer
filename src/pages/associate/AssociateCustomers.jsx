@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MoreVertical, Search, Filter, ArrowLeft, ArrowRight } from 'lucide-react';
+import { MoreVertical, Search, Filter, ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as DealsApi from '../../api/DealsApi';
 import { getSecureItem } from '../../utils/secureStorage';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
+
 
 const AssociateCustomers = () => {
     const navigate = useNavigate();
@@ -13,6 +15,8 @@ const AssociateCustomers = () => {
     const [total, setTotal] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [searchTerm, setSearchTerm] = useState('');
+    const [openMenuId, setOpenMenuId] = useState(null);
+
 
     const fetchCustomers = async () => {
         setLoading(true);
@@ -69,7 +73,7 @@ const AssociateCustomers = () => {
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">CustomerID</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Origin</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer Category</th>
+                                {/* <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer Category</th> */}
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Created By</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Primary Company</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
@@ -103,14 +107,75 @@ const AssociateCustomers = () => {
                                             {customer.CustomerName}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600">{customer.Origin || '-'}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">{customer.CustomerCategory || '-'}</td>
+                                        {/* <td className="px-6 py-4 text-sm text-gray-600">{customer.CustomerCategory || '-'}</td> */}
                                         <td className="px-6 py-4 text-sm text-gray-600">{customer.CreatedByName || '-'}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">{customer.PrimaryCompany || '-'}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-400">
-                                            <button className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+                                        <td className="px-6 py-4 text-sm text-gray-600">{customer.PrimaryCompany?.trim()
+                                            ? customer.PrimaryCompany
+                                            : customer.CustomerName || '-'}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-400 relative">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setOpenMenuId(openMenuId === customer.CustomerID ? null : customer.CustomerID);
+                                                }}
+                                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                            >
                                                 <MoreVertical className="w-4 h-4" />
                                             </button>
+
+                                            {openMenuId === customer.CustomerID && (
+                                                <div
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="absolute right-10 top-1/2 -translate-y-1/2 
+                       bg-white border border-gray-200 
+                       rounded-md shadow-md 
+                       px-3 py-2 flex items-center gap-4 z-50"
+                                                >
+                                                    {/* View */}
+                                                    <button
+                                                        onClick={() => {
+                                                            navigate(`/associate/customers/${customer.CustomerID}`);
+                                                            setOpenMenuId(null);
+                                                        }}
+                                                        className="text-blue-500 hover:scale-110 transition"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+
+                                                    {/* Edit */}
+                                                    <button
+                                                        onClick={() => {
+                                                            navigate(`/associate/customers/edit/${customer.CustomerID}`);
+                                                            setOpenMenuId(null);
+                                                        }}
+                                                        className="text-gray-700 hover:scale-110 transition"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+
+                                                    {/* Delete */}
+                                                    <button
+                                                        onClick={() => {
+                                                            console.log("Delete", customer.CustomerID);
+                                                            setOpenMenuId(null);
+                                                        }}
+                                                        className="text-red-500 hover:scale-110 transition"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+
+                                                    {/* Close */}
+                                                    <button
+                                                        onClick={() => setOpenMenuId(null)}
+                                                        className="text-gray-400 hover:text-black transition"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
+
+
                                     </tr>
                                 ))
                             ) : (
