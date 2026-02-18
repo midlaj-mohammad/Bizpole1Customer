@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, Loader2, Calendar } from "lucide-react";
+import { X, ChevronDown, Loader2, Calendar, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import locationData from "../../utils/statesAndDistricts.json";
 import DealsApi from "../../api/DealsApi";
 import { getSecureItem } from "../../utils/secureStorage";
 import Select from "react-select";
 
-const AddDealModal = ({ isOpen, onClose, onSuccess, deal }) => {
+const AddDealModal = ({ isOpen, onClose, onSuccess, deal, initialData }) => {
+    const navigate = useNavigate();
     console.log("AddDealModal deal prop:", deal);
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,6 +111,8 @@ const AddDealModal = ({ isOpen, onClose, onSuccess, deal }) => {
     }, [isOpen]);
 
     useEffect(() => {
+
+        if (!isOpen) return;
         const fetchFullDealDetails = async () => {
             if (isOpen && deal && deal.id) {
                 try {
@@ -140,43 +144,60 @@ const AddDealModal = ({ isOpen, onClose, onSuccess, deal }) => {
                             companyDistrict: d.CompanyDistrict || d.district || "",
                             companyPreferredLanguage: d.CompanyPreferredLanguage || "",
                         });
+                        setDealType(d.dealType || "Individual");
                     }
                 } catch (err) {
                     console.error("Error fetching full deal details", err);
                 }
             } else if (isOpen && !deal) {
                 // Reset form for fresh create
-                setFormData({
-                    customerName: "",
-                    mobile: "",
-                    email: "",
-                    country: "India",
-                    pincode: "",
-                    state: "",
-                    district: "",
-                    preferredLanguage: "",
-                    closureDate: "",
-                    serviceType: "individual",
-                    serviceCategory: "",
-                    serviceState: "",
-                    selectedServices: [],
-                    selectedPackage: null,
-                    billingPeriod: "monthly",
-                    companyName: "",
-                    companyGST: "",
-                    companyMobile: "",
-                    companyEmail: "",
-                    companyCountry: "India",
-                    companyState: "",
-                    companyDistrict: "",
-                    companyPreferredLanguage: "",
-                });
-                setStep(1);
+                if (initialData && Object.keys(initialData).length > 0) {
+                    console.log("Initializing modal with initialData:", initialData);
+
+                    setFormData(prev => ({
+                        ...prev,
+                        serviceType: initialData.serviceType || "individual",
+                        serviceCategory: initialData.serviceCategory || "",
+                        serviceState: initialData.serviceState || "",
+                        selectedServices: initialData.selectedServices || [],
+                    }));
+                    setDealType(initialData.serviceType === "package" ? "Package" : "Individual");
+                    setStep(1);
+                } else {
+                    console.log("Initializing modal for fresh create (no initialData)");
+                    setFormData({
+                        customerName: "",
+                        mobile: "",
+                        email: "",
+                        country: "India",
+                        pincode: "",
+                        state: "",
+                        district: "",
+                        preferredLanguage: "",
+                        closureDate: "",
+                        serviceType: "individual",
+                        serviceCategory: "",
+                        serviceState: "",
+                        selectedServices: [],
+                        selectedPackage: null,
+                        billingPeriod: "monthly",
+                        companyName: "",
+                        companyGST: "",
+                        companyMobile: "",
+                        companyEmail: "",
+                        companyCountry: "India",
+                        companyState: "",
+                        companyDistrict: "",
+                        companyPreferredLanguage: "",
+                    });
+                    setDealType("Individual");
+                    setStep(1);
+                }
             }
         };
 
         fetchFullDealDetails();
-    }, [isOpen, deal]);
+    }, [isOpen]);
 
     // Fetch services when service category changes
     useEffect(() => {
@@ -359,6 +380,9 @@ const AddDealModal = ({ isOpen, onClose, onSuccess, deal }) => {
             });
         }
     };
+
+
+
 
     const validateStep1 = () => {
         const newErrors = {};
@@ -920,14 +944,15 @@ const AddDealModal = ({ isOpen, onClose, onSuccess, deal }) => {
                                                             value: formData.serviceCategory,
                                                             label:
                                                                 serviceCategories.find(
-                                                                    (c) => c.CategoryID === formData.serviceCategory
-                                                                )?.CategoryName || "",
+                                                                    (c) => parseInt(c.CategoryID) === parseInt(formData.serviceCategory)
+                                                                )?.CategoryName || "Selected Category",
                                                         }
                                                         : null
                                                 }
                                                 onChange={(selected) =>
                                                     setFormData({
                                                         ...formData,
+                                                        serviceType: "individual", // Ensure individual is selected
                                                         serviceCategory: selected ? selected.value : "",
                                                     })
                                                 }
@@ -951,11 +976,23 @@ const AddDealModal = ({ isOpen, onClose, onSuccess, deal }) => {
                                             )}
                                         </div>
 
-                                        {/* Individual Services Multi-Select */}
                                         <div className="relative">
-                                            <label className="text-sm font-medium text-gray-700 block mb-1">
-                                                Services (Hold Ctrl/Cmd to select multiple)
-                                            </label>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <label className="text-sm font-medium text-gray-700 block">
+                                                    Services (Hold Ctrl/Cmd to select multiple)
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        onClose();
+                                                        navigate('/associate/explore-services');
+                                                    }}
+                                                    className="text-[#4b49ac] hover:text-[#3f3da0] flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-[#4b49ac]/5 px-2.5 py-1.5 rounded-xl transition-all hover:bg-[#4b49ac]/10 group"
+                                                >
+                                                    <Eye className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                                    Explore Services
+                                                </button>
+                                            </div>
                                             <select
                                                 multiple
                                                 name="selectedServices"
@@ -989,11 +1026,23 @@ const AddDealModal = ({ isOpen, onClose, onSuccess, deal }) => {
                                     </>
                                 ) : (
                                     <>
-                                        {/* Package Selection */}
                                         <div className="relative">
-                                            <label className="text-sm font-medium text-gray-700 block mb-1">
-                                                Package Name *
-                                            </label>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <label className="text-sm font-medium text-gray-700 block">
+                                                    Package Name *
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        onClose();
+                                                        navigate('/associate/explore-services');
+                                                    }}
+                                                    className="text-[#4b49ac] hover:text-[#3f3da0] flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-[#4b49ac]/5 px-2.5 py-1.5 rounded-xl transition-all hover:bg-[#4b49ac]/10 group"
+                                                >
+                                                    <Eye className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                                    Explore Services
+                                                </button>
+                                            </div>
                                             <select
                                                 name="selectedPackage"
                                                 value={formData.selectedPackage || ""}

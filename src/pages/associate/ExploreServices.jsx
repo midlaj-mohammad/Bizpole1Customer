@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getServiceCategories, getServices, getServicesByCategory } from '../../api/ServicesApi';
+import { useNavigate } from 'react-router-dom';
+import { Oval } from 'react-loader-spinner';
 
 const INDIAN_STATES = [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -11,12 +13,15 @@ const INDIAN_STATES = [
     "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
 ];
 
+
 function ServiceModal({ service, onClose }) {
+    const navigate = useNavigate();
     const [stateSearch, setStateSearch] = useState('');
     const [selectedState, setSelectedState] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const stateInputRef = useRef(null);
+
 
     const filteredStates = INDIAN_STATES.filter(state =>
         state.toLowerCase().includes(stateSearch.toLowerCase())
@@ -39,8 +44,17 @@ function ServiceModal({ service, onClose }) {
     };
 
     const handleCreateDeal = () => {
-        alert(`Creating deal for:\nService: ${service.ServiceName} (ID: ${service.ServiceID})\nCategory ID: ${service.CategoryID}\nState: ${selectedState}`);
+        const queryParams = new URLSearchParams({
+            create: "true",
+            state: selectedState,
+            category: service.CategoryID,
+            serviceId: service.ServiceID,
+            type: "individual"
+        });
+
+        navigate(`/associate/deals?${queryParams.toString()}`);
     };
+
 
     return (
         <div
@@ -322,6 +336,8 @@ function ExploreServices() {
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
+
     const [pagination, setPagination] = useState({
         currentPage: 1,
         totalPages: 1,
@@ -336,14 +352,21 @@ function ExploreServices() {
                 setCategories(data.data);
             } catch (error) {
                 console.error('Error fetching categories:', error);
+            } finally {
+                setCategoriesLoading(false);
             }
         };
+
         fetchCategories();
     }, []);
 
+
     useEffect(() => {
+        if (categoriesLoading) return;
+
         const fetchServices = async () => {
             setLoading(true);
+
             try {
                 let servicesData = [];
                 let totalItems = 0;
@@ -353,6 +376,7 @@ function ExploreServices() {
                         page: pagination.currentPage,
                         limit: pagination.limit
                     });
+
                     servicesData = response.data || [];
                     totalItems = response.total || 0;
                 } else {
@@ -361,13 +385,20 @@ function ExploreServices() {
                         limit: pagination.limit,
                         filter: searchQuery,
                     });
+
                     servicesData = data.data || data;
                     totalItems = data.pagination?.total || servicesData.length || 0;
                 }
 
                 const totalPages = Math.max(1, Math.ceil(totalItems / pagination.limit));
+
                 setServices(servicesData);
-                setPagination(prev => ({ ...prev, total: totalItems, totalPages }));
+                setPagination(prev => ({
+                    ...prev,
+                    total: totalItems,
+                    totalPages
+                }));
+
             } catch (error) {
                 console.error('Error fetching services:', error);
                 setServices([]);
@@ -375,8 +406,11 @@ function ExploreServices() {
                 setLoading(false);
             }
         };
+
         fetchServices();
-    }, [pagination.currentPage, searchQuery, selectedCategory]);
+
+    }, [pagination.currentPage, searchQuery, selectedCategory, categoriesLoading]);
+
 
     const handlePageChange = (newPage) => {
         if (newPage < 1 || newPage > pagination.totalPages) return;
@@ -432,212 +466,230 @@ function ExploreServices() {
     };
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#fafafa', padding: '60px 20px' }}>
-            <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-                {/* Header */}
-                <div style={{ marginBottom: '56px', textAlign: 'center' }}>
-                    <h1 style={{ fontSize: '48px', fontWeight: '600', marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.02em' }}>
-                        Our Services
-                    </h1>
-                    <p style={{ color: '#64748b', fontSize: '16px', maxWidth: '600px', margin: '0 auto' }}>
-                        Discover our comprehensive range of professional services tailored to meet your needs
-                    </p>
-                </div>
+        <>
 
-                {/* Search and Filter Bar */}
-                <div style={{ display: 'flex', gap: '16px', marginBottom: '48px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <div style={{ position: 'relative', flex: '1', maxWidth: '400px', minWidth: '250px' }}>
-                        <input
-                            type="text"
-                            placeholder="Search services..."
-                            value={searchQuery}
-                            onChange={handleSearchChange}
+
+            <div style={{ minHeight: '100vh', backgroundColor: '#fafafa', padding: '60px 20px' }}>
+                <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+                    {/* Header */}
+                    <div style={{ marginBottom: '56px', textAlign: 'center' }}>
+                        <h1 style={{ fontSize: '48px', fontWeight: '600', marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.02em' }}>
+                            Our Services
+                        </h1>
+                        <p style={{ color: '#64748b', fontSize: '16px', maxWidth: '600px', margin: '0 auto' }}>
+                            Discover our comprehensive range of professional services tailored to meet your needs
+                        </p>
+                    </div>
+
+                    {/* Search and Filter Bar */}
+                    <div style={{ display: 'flex', gap: '16px', marginBottom: '48px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <div style={{ position: 'relative', flex: '1', maxWidth: '400px', minWidth: '250px' }}>
+                            <input
+                                type="text"
+                                placeholder="Search services..."
+                                value={searchQuery}
+                                onChange={handleSearchChange}
+                                style={{
+                                    width: '100%', padding: '14px 40px 14px 18px',
+                                    border: '1px solid #e2e8f0', borderRadius: '12px',
+                                    fontSize: '15px', outline: 'none', backgroundColor: 'white',
+                                    transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                }}
+                                onFocus={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.1)'; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)'; }}
+                            />
+                            <span style={{ position: 'absolute', right: '18px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '18px' }}>🔍</span>
+                        </div>
+
+                        <select
+                            value={selectedCategory}
+                            onChange={handleCategoryChange}
                             style={{
-                                width: '100%', padding: '14px 40px 14px 18px',
-                                border: '1px solid #e2e8f0', borderRadius: '12px',
-                                fontSize: '15px', outline: 'none', backgroundColor: 'white',
+                                padding: '14px 18px', border: '1px solid #e2e8f0',
+                                borderRadius: '12px', fontSize: '15px', backgroundColor: 'white',
+                                cursor: 'pointer', minWidth: '180px', color: '#334155',
+                                outline: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                            }}
+                        >
+                            <option value="">All Categories</option>
+                            {categories.map((category) => (
+                                <option key={category.CategoryID} value={category.CategoryID}>
+                                    {category.CategoryName}
+                                </option>
+                            ))}
+                        </select>
+
+                        <button
+                            onClick={handleClearFilters}
+                            style={{
+                                padding: '14px 28px', border: '1px solid #e2e8f0',
+                                borderRadius: '12px', fontSize: '15px', backgroundColor: 'white',
+                                cursor: 'pointer', color: '#64748b', fontWeight: '500',
                                 transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                             }}
-                            onFocus={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.1)'; }}
-                            onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)'; }}
-                        />
-                        <span style={{ position: 'absolute', right: '18px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '18px' }}>🔍</span>
+                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                        >
+                            Clear Filters
+                        </button>
                     </div>
 
-                    <select
-                        value={selectedCategory}
-                        onChange={handleCategoryChange}
-                        style={{
-                            padding: '14px 18px', border: '1px solid #e2e8f0',
-                            borderRadius: '12px', fontSize: '15px', backgroundColor: 'white',
-                            cursor: 'pointer', minWidth: '180px', color: '#334155',
-                            outline: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                        }}
-                    >
-                        <option value="">All Categories</option>
-                        {categories.map((category) => (
-                            <option key={category.CategoryID} value={category.CategoryID}>
-                                {category.CategoryName}
-                            </option>
-                        ))}
-                    </select>
+                    {(loading || categoriesLoading) && (
+                        <div style={{ textAlign: 'center', padding: '80px 0', color: '#64748b' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                                <Oval
+                                    height={40}
+                                    width={40}
+                                    color="#4b49ac"
+                                    wrapperStyle={{}}
+                                    wrapperClass=""
+                                    visible={true}
+                                    ariaLabel='oval-loading'
+                                    secondaryColor="#4b49ac33"
+                                    strokeWidth={4}
+                                    strokeWidthSecondary={4}
+                                />
+                                <div style={{ fontSize: '16px', fontWeight: '500' }}>Loading services...</div>
+                            </div>
+                        </div>
+                    )}
 
-                    <button
-                        onClick={handleClearFilters}
-                        style={{
-                            padding: '14px 28px', border: '1px solid #e2e8f0',
-                            borderRadius: '12px', fontSize: '15px', backgroundColor: 'white',
-                            cursor: 'pointer', color: '#64748b', fontWeight: '500',
-                            transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
-                    >
-                        Clear Filters
-                    </button>
+                    {(!loading && !categoriesLoading) && services.length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
+                            <div style={{ fontSize: '18px', marginBottom: '8px' }}>No services found</div>
+                            <div style={{ fontSize: '14px' }}>Try adjusting your search or filters</div>
+                        </div>
+                    )}
+
+                    {/* Services Grid */}
+                    {!loading && !categoriesLoading && services.length > 0 && (
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                            gap: '32px', marginBottom: '64px'
+                        }}>
+                            {services.map((service, index) => (
+                                <div
+                                    key={service.ServiceID}
+                                    style={{
+                                        backgroundColor: 'white', borderRadius: '16px',
+                                        padding: '32px', border: '1px solid #f1f5f9',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        cursor: 'pointer', position: 'relative'
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.transform = 'translateY(-8px)';
+                                        e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)';
+                                        e.currentTarget.style.borderColor = '#e2e8f0';
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                    }}
+                                >
+                                    <div style={{
+                                        width: '56px', height: '56px',
+                                        background: `linear-gradient(135deg, ${getServiceColor(index)}15 0%, ${getServiceColor(index)}25 100%)`,
+                                        borderRadius: '14px', display: 'flex',
+                                        alignItems: 'center', justifyContent: 'center', marginBottom: '20px'
+                                    }}>
+                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                                            stroke={getServiceColor(index)} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                                        </svg>
+                                    </div>
+
+                                    {service.ServiceCode && (
+                                        <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>
+                                            {service.ServiceCode}
+                                        </div>
+                                    )}
+
+                                    <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#0f172a', marginBottom: '10px', lineHeight: '1.3', letterSpacing: '-0.01em' }}>
+                                        {service.ServiceName}
+                                    </h3>
+
+                                    <p style={{
+                                        fontSize: '14px', color: '#64748b', marginBottom: '24px', lineHeight: '1.6',
+                                        display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                                    }}>
+                                        {service.Description}
+                                    </p>
+
+                                    <button
+                                        onClick={() => handleLearnMore(service)}
+                                        style={{
+                                            padding: '0', backgroundColor: 'transparent',
+                                            color: getServiceColor(index), border: 'none',
+                                            fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                                            display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'gap 0.2s'
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.gap = '10px'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.gap = '6px'; }}
+                                    >
+                                        Learn More <span style={{ fontSize: '14px' }}>→</span>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {!loading && !categoriesLoading && services.length > 0 && pagination.totalPages > 1 && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '48px' }}>
+                            <button
+                                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                                disabled={pagination.currentPage === 1}
+                                style={{
+                                    padding: '10px 18px', border: '1px solid #e2e8f0', borderRadius: '10px',
+                                    backgroundColor: 'white', cursor: pagination.currentPage === 1 ? 'not-allowed' : 'pointer',
+                                    fontSize: '14px', color: pagination.currentPage === 1 ? '#cbd5e1' : '#64748b',
+                                    fontWeight: '500', transition: 'all 0.2s', opacity: pagination.currentPage === 1 ? 0.5 : 1
+                                }}
+                            >← Previous</button>
+
+                            {getPaginationButtons().map((page) => (
+                                <button key={page} onClick={() => handlePageChange(page)}
+                                    style={{
+                                        width: '40px', height: '40px',
+                                        border: page === pagination.currentPage ? 'none' : '1px solid #e2e8f0',
+                                        borderRadius: '10px',
+                                        backgroundColor: page === pagination.currentPage ? '#3b82f6' : 'white',
+                                        color: page === pagination.currentPage ? 'white' : '#64748b',
+                                        cursor: 'pointer', fontSize: '14px',
+                                        fontWeight: page === pagination.currentPage ? '600' : '500', transition: 'all 0.2s'
+                                    }}>
+                                    {page}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                                disabled={pagination.currentPage >= pagination.totalPages}
+                                style={{
+                                    padding: '10px 18px', border: '1px solid #e2e8f0', borderRadius: '10px',
+                                    backgroundColor: 'white', cursor: pagination.currentPage === pagination.totalPages ? 'not-allowed' : 'pointer',
+                                    fontSize: '14px', color: pagination.currentPage === pagination.totalPages ? '#cbd5e1' : '#64748b',
+                                    fontWeight: '500', transition: 'all 0.2s', opacity: pagination.currentPage === pagination.totalPages ? 0.5 : 1
+                                }}
+                            >Next →</button>
+                        </div>
+                    )}
                 </div>
 
-                {loading && (
-                    <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
-                        <div style={{ fontSize: '18px' }}>Loading services...</div>
-                    </div>
-                )}
-
-                {!loading && services.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
-                        <div style={{ fontSize: '18px', marginBottom: '8px' }}>No services found</div>
-                        <div style={{ fontSize: '14px' }}>Try adjusting your search or filters</div>
-                    </div>
-                )}
-
-                {/* Services Grid */}
-                {!loading && services.length > 0 && (
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                        gap: '32px', marginBottom: '64px'
-                    }}>
-                        {services.map((service, index) => (
-                            <div
-                                key={service.ServiceID}
-                                style={{
-                                    backgroundColor: 'white', borderRadius: '16px',
-                                    padding: '32px', border: '1px solid #f1f5f9',
-                                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    cursor: 'pointer', position: 'relative'
-                                }}
-                                onMouseEnter={e => {
-                                    e.currentTarget.style.transform = 'translateY(-8px)';
-                                    e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)';
-                                    e.currentTarget.style.borderColor = '#e2e8f0';
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-                                    e.currentTarget.style.borderColor = '#f1f5f9';
-                                }}
-                            >
-                                <div style={{
-                                    width: '56px', height: '56px',
-                                    background: `linear-gradient(135deg, ${getServiceColor(index)}15 0%, ${getServiceColor(index)}25 100%)`,
-                                    borderRadius: '14px', display: 'flex',
-                                    alignItems: 'center', justifyContent: 'center', marginBottom: '20px'
-                                }}>
-                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-                                        stroke={getServiceColor(index)} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                                        <line x1="8" y1="21" x2="16" y2="21"></line>
-                                        <line x1="12" y1="17" x2="12" y2="21"></line>
-                                    </svg>
-                                </div>
-
-                                {service.ServiceCode && (
-                                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>
-                                        {service.ServiceCode}
-                                    </div>
-                                )}
-
-                                <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#0f172a', marginBottom: '10px', lineHeight: '1.3', letterSpacing: '-0.01em' }}>
-                                    {service.ServiceName}
-                                </h3>
-
-                                <p style={{
-                                    fontSize: '14px', color: '#64748b', marginBottom: '24px', lineHeight: '1.6',
-                                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-                                }}>
-                                    {service.Description}
-                                </p>
-
-                                <button
-                                    onClick={() => handleLearnMore(service)}
-                                    style={{
-                                        padding: '0', backgroundColor: 'transparent',
-                                        color: getServiceColor(index), border: 'none',
-                                        fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-                                        display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'gap 0.2s'
-                                    }}
-                                    onMouseEnter={e => { e.currentTarget.style.gap = '10px'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.gap = '6px'; }}
-                                >
-                                    Learn More <span style={{ fontSize: '14px' }}>→</span>
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {!loading && services.length > 0 && pagination.totalPages > 1 && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '48px' }}>
-                        <button
-                            onClick={() => handlePageChange(pagination.currentPage - 1)}
-                            disabled={pagination.currentPage === 1}
-                            style={{
-                                padding: '10px 18px', border: '1px solid #e2e8f0', borderRadius: '10px',
-                                backgroundColor: 'white', cursor: pagination.currentPage === 1 ? 'not-allowed' : 'pointer',
-                                fontSize: '14px', color: pagination.currentPage === 1 ? '#cbd5e1' : '#64748b',
-                                fontWeight: '500', transition: 'all 0.2s', opacity: pagination.currentPage === 1 ? 0.5 : 1
-                            }}
-                        >← Previous</button>
-
-                        {getPaginationButtons().map((page) => (
-                            <button key={page} onClick={() => handlePageChange(page)}
-                                style={{
-                                    width: '40px', height: '40px',
-                                    border: page === pagination.currentPage ? 'none' : '1px solid #e2e8f0',
-                                    borderRadius: '10px',
-                                    backgroundColor: page === pagination.currentPage ? '#3b82f6' : 'white',
-                                    color: page === pagination.currentPage ? 'white' : '#64748b',
-                                    cursor: 'pointer', fontSize: '14px',
-                                    fontWeight: page === pagination.currentPage ? '600' : '500', transition: 'all 0.2s'
-                                }}>
-                                {page}
-                            </button>
-                        ))}
-
-                        <button
-                            onClick={() => handlePageChange(pagination.currentPage + 1)}
-                            disabled={pagination.currentPage >= pagination.totalPages}
-                            style={{
-                                padding: '10px 18px', border: '1px solid #e2e8f0', borderRadius: '10px',
-                                backgroundColor: 'white', cursor: pagination.currentPage === pagination.totalPages ? 'not-allowed' : 'pointer',
-                                fontSize: '14px', color: pagination.currentPage === pagination.totalPages ? '#cbd5e1' : '#64748b',
-                                fontWeight: '500', transition: 'all 0.2s', opacity: pagination.currentPage === pagination.totalPages ? 0.5 : 1
-                            }}
-                        >Next →</button>
-                    </div>
+                {/* Service Detail Modal */}
+                {selectedService && (
+                    <ServiceModal
+                        service={selectedService}
+                        onClose={() => setSelectedService(null)}
+                    />
                 )}
             </div>
-
-            {/* Service Detail Modal */}
-            {selectedService && (
-                <ServiceModal
-                    service={selectedService}
-                    onClose={() => setSelectedService(null)}
-                />
-            )}
-        </div>
+        </>
     );
 }
 

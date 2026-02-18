@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AddDealModal from '../../components/Modals/AddDealModal';
 import { Plus, Edit2, Trash2, Search, Filter, Loader2, MoreVertical, ExternalLink } from 'lucide-react';
 import DealsApi from '../../api/DealsApi';
@@ -10,7 +10,40 @@ import { upsertQuote } from '../../api/Quote';
 
 const AssociateDeals = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [preFilledData, setPreFilledData] = useState(null);
+
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+
+        const create = params.get("create");
+
+
+        if (create === "true") {
+            const state = params.get("state");
+            const category = params.get("category");
+            const serviceId = params.get("serviceId");
+            const type = params.get("type");
+
+            const dealData = {
+                serviceState: state || "",
+                serviceCategory: category || "",
+                selectedServices: serviceId ? [serviceId] : [],
+                serviceType: type || "individual"
+            };
+
+            console.log("Opening modal with query params:", dealData);
+
+            setPreFilledData(dealData);
+            setIsModalOpen(true);
+        }
+
+
+
+    }, [location.search, navigate, location.pathname]);
+
     const [deals, setDeals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -386,9 +419,13 @@ const AssociateDeals = () => {
                 onClose={() => {
                     setIsModalOpen(false);
                     setEditingDeal(null);
+                    setPreFilledData(null);
+                    // Remove query params from URL
+                    navigate("/associate/deals", { replace: true });
                 }}
                 onSuccess={handleDealSuccess}
                 deal={editingDeal}
+                initialData={preFilledData}
             />
         </div>
     );
