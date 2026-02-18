@@ -8,41 +8,48 @@ import { format } from 'date-fns';
 import axiosInstance from '../../api/axiosInstance';
 import { upsertQuote } from '../../api/Quote';
 
+const getDealDataFromParams = (search) => {
+    try {
+        const params = new URLSearchParams(search);
+        if (params.get("create") === "true") {
+            return {
+                serviceState: params.get("state") || "",
+                serviceCategory: params.get("category") || "",
+                selectedServices: params.get("serviceId") ? [params.get("serviceId")] : [],
+                serviceType: params.get("type") || "individual"
+            };
+        }
+    } catch (e) {
+        console.error("Error parsing params", e);
+    }
+    return null;
+};
+
 const AssociateDeals = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [preFilledData, setPreFilledData] = useState(null);
 
+    // Initialize state directly from URL to prevent flicker and race conditions
+    const initialDealData = getDealDataFromParams(location.search);
+    const [isModalOpen, setIsModalOpen] = useState(!!initialDealData);
+    const [preFilledData, setPreFilledData] = useState(initialDealData);
 
+    // Sync effect to handle URL changes (e.g. clicking create deal while already on deals page)
     useEffect(() => {
-        const params = new URLSearchParams(location.search);
-
-        const create = params.get("create");
-
-
-        if (create === "true") {
-            const state = params.get("state");
-            const category = params.get("category");
-            const serviceId = params.get("serviceId");
-            const type = params.get("type");
-
-            const dealData = {
-                serviceState: state || "",
-                serviceCategory: category || "",
-                selectedServices: serviceId ? [serviceId] : [],
-                serviceType: type || "individual"
-            };
-
-            console.log("Opening modal with query params:", dealData);
-
+        const dealData = getDealDataFromParams(location.search);
+        if (dealData) {
             setPreFilledData(dealData);
             setIsModalOpen(true);
         }
+    }, [location.search]);
 
-
-
-    }, [location.search, navigate, location.pathname]);
+    // Protective sync: If URL says create=true but modal is closed, force it open
+    // This handles edge cases where other state updates might have closed it prematurely
+    useEffect(() => {
+        if (!isModalOpen && getDealDataFromParams(location.search)) {
+            setIsModalOpen(true);
+        }
+    }, [isModalOpen, location.search]);
 
     const [deals, setDeals] = useState([]);
     const [loading, setLoading] = useState(true);

@@ -20,6 +20,7 @@ const OrderDetailView = () => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Summary');
+    const [activeFileSubTab, setActiveFileSubTab] = useState('Permanent Files');
     const [invoices, setInvoices] = useState([]);
     const [invoiceLoading, setInvoiceLoading] = useState(false);
 
@@ -34,11 +35,14 @@ const OrderDetailView = () => {
 
     const tabs = [
         { name: 'Summary', icon: LayoutDashboard },
-        { name: 'Services', icon: ListChecks },
+        // { name: 'Services', icon: ListChecks },
         { name: 'Files', icon: FolderOpen },
         { name: 'Receipts', icon: Receipt },
         { name: 'Invoice', icon: FileStack },
         { name: 'Notes', icon: FileText },
+        // { name: 'Event Logs', icon: History },
+        { name: 'Tasks', icon: ListChecks },
+        // { name: 'Chat', icon: MessageSquare },
     ];
 
     useEffect(() => {
@@ -296,9 +300,9 @@ const OrderDetailView = () => {
                             <button
                                 key={tab.name}
                                 onClick={() => setActiveTab(tab.name)}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-t-xl text-[11px] font-bold transition-all whitespace-nowrap border-b-2 ${activeTab === tab.name
-                                    ? 'bg-slate-50 text-[#4b49ac] border-[#4b49ac]'
-                                    : 'text-slate-400 border-transparent hover:text-slate-600 bg-white mr-1'
+                                className={`flex items-center gap-2 px-6 py-3 text-[12px] font-bold transition-all whitespace-nowrap border-b-2 ${activeTab === tab.name
+                                    ? 'text-slate-900 border-yellow-400 bg-yellow-50/10'
+                                    : 'text-slate-400 border-transparent hover:text-slate-600'
                                     }`}
                             >
                                 {tab.name}
@@ -341,39 +345,43 @@ const OrderDetailView = () => {
                             </div>
                         </InfoCard>
 
-                        {/* 3. Associated Services */}
-                        <div className="xl:col-span-2">
-                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 bg-slate-50 border-b border-slate-200">
-                                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                        <ListChecks className="w-4 h-4 text-[#4b49ac]" />
-                                        Associated Services ({order.ServiceDetails?.length || 0})
-                                    </h3>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse text-[11px]">
-                                        <thead>
-                                            <tr className="bg-slate-50/50 border-b border-slate-100 uppercase tracking-tighter font-bold text-slate-400">
-                                                <th className="px-6 py-3">Service Name</th>
-                                                <th className="px-6 py-3">Category</th>
-                                                <th className="px-6 py-3 text-right">Total Price</th>
-                                                <th className="px-6 py-3">Status</th>
-                                                <th className="px-6 py-3">TAT Days</th>
+                        {/* Summary View specific sections can be added here if needed */}
+                    </div>
+                ) : activeTab === 'Services' ? (
+                    <div className="animate-in fade-in duration-500">
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                    <ListChecks className="w-4 h-4 text-[#4b49ac]" />
+                                    Service Summary ({order.ServiceDetails?.length || 0})
+                                </h3>
+                                <button className="text-[10px] font-bold text-[#4b49ac] hover:underline">VIEW ALL SERVICES</button>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse text-[11px]">
+                                    <thead>
+                                        <tr className="bg-slate-50/50 border-b border-slate-100 uppercase tracking-tighter font-bold text-slate-400">
+                                            <th className="px-6 py-3">Service Name</th>
+                                            <th className="px-6 py-3">Category</th>
+                                            <th className="px-6 py-3 text-right">Total Price</th>
+                                            <th className="px-6 py-3">Status</th>
+                                            <th className="px-6 py-3">TAT Days</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 text-[12px]">
+                                        {(order.ServiceDetails || []).map((service, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
+                                                <td className="px-6 py-4 font-semibold text-slate-700">{service.ServiceName}</td>
+                                                <td className="px-6 py-4 text-slate-500 italic">{service.ServiceCategory || '--'}</td>
+                                                <td className="px-6 py-4 text-right font-bold text-slate-700">₹{(service.Total || 0).toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-slate-500 uppercase font-black text-[9px]">
+                                                    <span className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full">{service.ServiceStatus || 'pending'}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-slate-400">{service.TotalTAT || 0} Days</td>
                                             </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-50">
-                                            {(order.ServiceDetails || []).map((service, idx) => (
-                                                <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
-                                                    <td className="px-6 py-4 font-semibold text-slate-700">{service.ServiceName}</td>
-                                                    <td className="px-6 py-4 text-slate-500 italic">{service.ServiceCategory || '--'}</td>
-                                                    <td className="px-6 py-4 text-right font-bold text-slate-700">₹{(service.Total || 0).toLocaleString()}</td>
-                                                    <td className="px-6 py-4 text-slate-500 uppercase font-bold text-[9px]">{service.ServiceStatus || 'pending'}</td>
-                                                    <td className="px-6 py-4 text-slate-400">{service.TotalTAT || 0} Days</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -550,6 +558,96 @@ const OrderDetailView = () => {
                         )}
                     </div>
 
+                ) : activeTab === 'Files' ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-500 min-h-[600px] overflow-hidden">
+                        {/* Tab Content Header */}
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30">
+                            <h2 className="text-xl font-bold text-slate-900 mb-6">Files</h2>
+
+                            {/* File Sub Tabs */}
+                            <div className="flex gap-2 p-1 bg-slate-100/50 rounded-2xl w-fit">
+                                {['Permanent Files', 'Service Files', 'Form Files'].map(subTab => (
+                                    <button
+                                        key={subTab}
+                                        onClick={() => setActiveFileSubTab(subTab)}
+                                        className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${activeFileSubTab === subTab
+                                            ? 'bg-yellow-400 text-slate-900 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                                            }`}
+                                    >
+                                        {subTab}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* File Sections */}
+                        <div className="p-8 space-y-8">
+                            {activeFileSubTab === 'Permanent Files' ? (
+                                <>
+                                    <FileSection title="Collectables" files={[]} />
+                                    <FileSection title="Task Related" files={[]} />
+                                    <FileSection title="Deliverables" files={[]} />
+                                </>
+                            ) : (
+                                <div className="py-20 text-center">
+                                    <FolderOpen className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                                    <p className="text-slate-400 font-medium tracking-tight">No {activeFileSubTab.toLowerCase()} found for this order.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : activeTab === 'Tasks' ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-500 min-h-[500px] overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30">
+                            <h2 className="text-xl font-bold text-slate-900 mb-2">Process Tasks</h2>
+                            <p className="text-xs text-slate-500 font-medium">Track the completion status of various service steps</p>
+                        </div>
+                        <div className="p-8">
+                            <div className="space-y-4">
+                                {(order.ServiceDetails || []).map((service, sIdx) => (
+                                    <div key={sIdx} className="border border-slate-100 rounded-2xl p-6 bg-slate-50/20">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-sm font-bold text-slate-800">{service.ServiceName}</h3>
+                                            <span className="text-[10px] bg-[#4b49ac]/10 text-[#4b49ac] px-3 py-1 rounded-full font-black uppercase">{service.ServiceStatus || 'Standard'}</span>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {/* Static tasks for now until dynamic task data is available */}
+                                            <TaskItem title="Customer Onboarding" status="Completed" date="12 Oct 2023" />
+                                            <TaskItem title="Document Collection" status="Completed" date="14 Oct 2023" />
+                                            <TaskItem title="Initial Verification" status="In Progress" />
+                                            <TaskItem title="Final Submission" status="Pending" />
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!order.ServiceDetails || order.ServiceDetails.length === 0) && (
+                                    <div className="py-20 text-center text-slate-400">
+                                        No active tasks found for this order.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ) : activeTab === 'Notes' ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-500 min-h-[500px]">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900 mb-1">Order Notes</h2>
+                                <p className="text-xs text-slate-500 font-medium">Internal communications and status updates</p>
+                            </div>
+                            <button className="bg-[#4b49ac] text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-[#3f3e91] transition-all shadow-sm">
+                                ADD NOTE
+                            </button>
+                        </div>
+                        <div className="p-8">
+                            <div className="space-y-6">
+                                <div className="py-20 text-center text-slate-400">
+                                    <FileText className="w-12 h-12 text-slate-100 mx-auto mb-4" />
+                                    No notes documented yet.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 ) : (
                     <div className="bg-white rounded-2xl border border-slate-200 border-dashed p-16 text-center animate-in fade-in duration-500">
                         <Activity className="w-12 h-12 text-slate-200 mx-auto mb-4" />
@@ -560,133 +658,135 @@ const OrderDetailView = () => {
             </div>
 
             {/* Receipt Modal */}
-            {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                        {/* Header */}
-                        <div className="bg-[#fbbf24] p-6 flex justify-between items-start">
-                            <div>
-                                <h2 className="text-xl font-bold text-white uppercase tracking-wide">Payment Receipts</h2>
-                                <p className="text-white/90 text-sm mt-1">Official Transaction Record</p>
+            {
+                modalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                            {/* Header */}
+                            <div className="bg-[#fbbf24] p-6 flex justify-between items-start">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white uppercase tracking-wide">Payment Receipts</h2>
+                                    <p className="text-white/90 text-sm mt-1">Official Transaction Record</p>
+                                </div>
+                                <button
+                                    onClick={() => setModalOpen(false)}
+                                    className="text-white/80 hover:text-white transition-colors"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
                             </div>
-                            <button
-                                onClick={() => setModalOpen(false)}
-                                className="text-white/80 hover:text-white transition-colors"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
 
-                        {/* Body */}
-                        <div className="p-6 max-h-[70vh] overflow-y-auto">
-                            {detailLoading ? (
-                                <div className="flex flex-col items-center justify-center py-12">
-                                    <Loader2 className="w-8 h-8 animate-spin text-[#fbbf24]" />
-                                    <p className="mt-2 text-slate-500">Loading details...</p>
-                                </div>
-                            ) : selectedReceipt ? (
-                                <div className="space-y-6">
-                                    <div className="text-sm text-slate-500">
-                                        Receipt ID: {selectedReceipt.PaymentID}
+                            {/* Body */}
+                            <div className="p-6 max-h-[70vh] overflow-y-auto">
+                                {detailLoading ? (
+                                    <div className="flex flex-col items-center justify-center py-12">
+                                        <Loader2 className="w-8 h-8 animate-spin text-[#fbbf24]" />
+                                        <p className="mt-2 text-slate-500">Loading details...</p>
                                     </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-lg">
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase mb-1">Transaction ID</p>
-                                            <div className="bg-white border border-slate-200 rounded px-3 py-2 text-sm font-medium text-slate-700">
-                                                {selectedReceipt.TransactionID || "N/A"}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase mb-1">Transaction Date</p>
-                                            <div className="font-bold text-lg text-slate-800">
-                                                {selectedReceipt.TransactionDate
-                                                    ? format(new Date(selectedReceipt.TransactionDate), "M/d/yyyy")
-                                                    : (selectedReceipt.PaymentDate ? format(new Date(selectedReceipt.PaymentDate), "M/d/yyyy") : "N/A")}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase mb-1">Payment Status</p>
-                                            <div className="font-bold text-lg text-slate-900 capitalize">
-                                                {selectedReceipt.PaymentStatus}
-                                            </div>
-                                        </div>
-                                        <div className="col-span-1 md:col-span-2">
-                                            <p className="text-xs font-bold text-slate-400 uppercase mb-1">Remarks</p>
-                                            <div className="bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-600">
-                                                {selectedReceipt.Remarks || "No remarks"}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Service Breakdown */}
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <div className="w-1 h-4 bg-[#d97706] rounded-full"></div>
-                                            <h3 className="text-sm font-bold text-slate-700">Service Breakdown</h3>
+                                ) : selectedReceipt ? (
+                                    <div className="space-y-6">
+                                        <div className="text-sm text-slate-500">
+                                            Receipt ID: {selectedReceipt.PaymentID}
                                         </div>
 
-                                        <div className="border border-slate-200 rounded-lg overflow-hidden">
-                                            <table className="w-full text-xs text-left">
-                                                <thead className="bg-slate-50 border-b border-slate-200">
-                                                    <tr>
-                                                        <th className="px-4 py-3 font-semibold text-slate-500 uppercase">Service</th>
-                                                        <th className="px-4 py-3 font-semibold text-slate-500 uppercase text-right">Vendor Fee</th>
-                                                        <th className="px-4 py-3 font-semibold text-slate-500 uppercase text-right">Professional Fee</th>
-                                                        <th className="px-4 py-3 font-semibold text-slate-500 uppercase text-right">Contractor Fee</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {selectedReceipt.services && selectedReceipt.services.length > 0 ? (
-                                                        selectedReceipt.services.map((svc, idx) => (
-                                                            <tr key={idx}>
-                                                                <td className="px-4 py-3 text-slate-700 font-medium">
-                                                                    {svc.ServiceName || `Service ID: ${svc.ServiceID}`}
-                                                                </td>
-                                                                <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(svc.VendorFee || 0).toFixed(2)}</td>
-                                                                <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(svc.ProfessionalFee || 0).toFixed(2)}</td>
-                                                                <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(svc.ContractorFee || 0).toFixed(2)}</td>
-                                                            </tr>
-                                                        ))
-                                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-lg">
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Transaction ID</p>
+                                                <div className="bg-white border border-slate-200 rounded px-3 py-2 text-sm font-medium text-slate-700">
+                                                    {selectedReceipt.TransactionID || "N/A"}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Transaction Date</p>
+                                                <div className="font-bold text-lg text-slate-800">
+                                                    {selectedReceipt.TransactionDate
+                                                        ? format(new Date(selectedReceipt.TransactionDate), "M/d/yyyy")
+                                                        : (selectedReceipt.PaymentDate ? format(new Date(selectedReceipt.PaymentDate), "M/d/yyyy") : "N/A")}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Payment Status</p>
+                                                <div className="font-bold text-lg text-slate-900 capitalize">
+                                                    {selectedReceipt.PaymentStatus}
+                                                </div>
+                                            </div>
+                                            <div className="col-span-1 md:col-span-2">
+                                                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Remarks</p>
+                                                <div className="bg-white border border-slate-200 rounded px-3 py-2 text-sm text-slate-600">
+                                                    {selectedReceipt.Remarks || "No remarks"}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Service Breakdown */}
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <div className="w-1 h-4 bg-[#d97706] rounded-full"></div>
+                                                <h3 className="text-sm font-bold text-slate-700">Service Breakdown</h3>
+                                            </div>
+
+                                            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                                <table className="w-full text-xs text-left">
+                                                    <thead className="bg-slate-50 border-b border-slate-200">
                                                         <tr>
-                                                            <td className="px-4 py-3 text-slate-700 font-medium">Service Details</td>
-                                                            <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(selectedReceipt.VendorFee || 0).toFixed(2)}</td>
-                                                            <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(selectedReceipt.ProfessionalFee || selectedReceipt.ProfFee || 0).toFixed(2)}</td>
-                                                            <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(selectedReceipt.ContractorFee || 0).toFixed(2)}</td>
+                                                            <th className="px-4 py-3 font-semibold text-slate-500 uppercase">Service</th>
+                                                            <th className="px-4 py-3 font-semibold text-slate-500 uppercase text-right">Vendor Fee</th>
+                                                            <th className="px-4 py-3 font-semibold text-slate-500 uppercase text-right">Professional Fee</th>
+                                                            <th className="px-4 py-3 font-semibold text-slate-500 uppercase text-right">Contractor Fee</th>
                                                         </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {selectedReceipt.services && selectedReceipt.services.length > 0 ? (
+                                                            selectedReceipt.services.map((svc, idx) => (
+                                                                <tr key={idx}>
+                                                                    <td className="px-4 py-3 text-slate-700 font-medium">
+                                                                        {svc.ServiceName || `Service ID: ${svc.ServiceID}`}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(svc.VendorFee || 0).toFixed(2)}</td>
+                                                                    <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(svc.ProfessionalFee || 0).toFixed(2)}</td>
+                                                                    <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(svc.ContractorFee || 0).toFixed(2)}</td>
+                                                                </tr>
+                                                            ))
+                                                        ) : (
+                                                            <tr>
+                                                                <td className="px-4 py-3 text-slate-700 font-medium">Service Details</td>
+                                                                <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(selectedReceipt.VendorFee || 0).toFixed(2)}</td>
+                                                                <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(selectedReceipt.ProfessionalFee || selectedReceipt.ProfFee || 0).toFixed(2)}</td>
+                                                                <td className="px-4 py-3 text-right text-slate-600">₹{parseFloat(selectedReceipt.ContractorFee || 0).toFixed(2)}</td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <p className="text-center text-slate-500">No details available</p>
-                            )}
-                        </div>
+                                ) : (
+                                    <p className="text-center text-slate-500">No details available</p>
+                                )}
+                            </div>
 
-                        {/* Footer */}
-                        <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
-                            <button
-                                onClick={() => setModalOpen(false)}
-                                className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
-                            >
-                                Close
-                            </button>
-                            <button
-                                onClick={() => downloadPDF()}
-                                className="px-4 py-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-white rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
-                            >
-                                <Download className="w-4 h-4" />
-                                Download PDF
-                            </button>
+                            {/* Footer */}
+                            <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+                                <button
+                                    onClick={() => setModalOpen(false)}
+                                    className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    onClick={() => downloadPDF()}
+                                    className="px-4 py-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-white rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    Download PDF
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-        </div>
+        </div >
     );
 };
 
@@ -717,6 +817,42 @@ const PriceItem = ({ label, value, isTotal }) => (
         <p className={`text-[12px] font-bold ${isTotal ? 'text-emerald-600 text-[14px]' : 'text-slate-700'}`}>
             ₹{Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </p>
+    </div>
+);
+
+const FileSection = ({ title, files = [] }) => (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 bg-white border-b border-slate-50">
+            <h3 className="text-sm font-bold text-slate-800">{title}</h3>
+        </div>
+        <div className="p-6">
+            {files.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* File items would go here */}
+                </div>
+            ) : (
+                <div className="py-4">
+                    <p className="text-xs text-slate-400 font-medium">No files</p>
+                </div>
+            )}
+        </div>
+    </div>
+);
+
+const TaskItem = ({ title, status, date }) => (
+    <div className="flex items-center justify-between py-3 px-4 bg-white border border-slate-50 rounded-xl">
+        <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${status === 'Completed' ? 'bg-emerald-500' :
+                status === 'In Progress' ? 'bg-blue-500' : 'bg-slate-200'
+                }`}></div>
+            <span className="text-[12px] font-bold text-slate-700">{title}</span>
+        </div>
+        <div className="flex items-center gap-4">
+            {date && <span className="text-[10px] text-slate-400 font-medium">{date}</span>}
+            <span className={`text-[9px] font-black uppercase tracking-tighter ${status === 'Completed' ? 'text-emerald-500' :
+                status === 'In Progress' ? 'text-blue-500' : 'text-slate-400'
+                }`}>{status}</span>
+        </div>
     </div>
 );
 
