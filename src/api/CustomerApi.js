@@ -29,3 +29,13 @@ export const getCustomerById = (id, employeeId) =>
 
 export const deleteCustomer = (id) =>
   axiosInstance.delete(`/customer/${id}`);
+
+export const getCustomerDocuments = (id) =>
+  axiosInstance.get(`/customer/documents/${id}`);
+
+export const uploadCustomerDocuments = (formData) =>
+  axiosInstance.post("/customer/upload-documents", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });

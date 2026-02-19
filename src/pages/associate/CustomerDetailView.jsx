@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -13,7 +13,10 @@ import {
     Phone,
     Mail,
     CreditCard,
-    Globe
+    Globe,
+    CheckCircle2,
+    Upload,
+    Eye
 } from 'lucide-react';
 import * as CustomerApi from '../../api/CustomerApi';
 import * as CompanyApi from '../../api/CompanyApi';
@@ -26,6 +29,11 @@ const CustomerDetailView = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('Summary');
+    const [documents, setDocuments] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [selectedDocType, setSelectedDocType] = useState(null);
+    const fileInputRef = useRef(null);
+
 
 
 
@@ -52,8 +60,80 @@ const CustomerDetailView = () => {
 
         if (id) {
             fetchCustomerDetails();
+            fetchDocuments();
         }
     }, [id]);
+
+    const fetchDocuments = async () => {
+        try {
+            const response = await CustomerApi.getCustomerDocuments(id);
+            if (response.data.success) {
+                setDocuments(response.data.data);
+            }
+        } catch (err) {
+            console.error("Error fetching documents:", err);
+        }
+    };
+
+    const handleUploadClick = (type) => {
+        setSelectedDocType(type);
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !selectedDocType) return;
+
+        setUploading(true);
+
+        const formData = new FormData();
+        formData.append('customerId', id);
+        formData.append(selectedDocType.toLowerCase(), file);
+
+        try {
+            await CustomerApi.uploadCustomerDocuments(formData);
+            await new Promise(res => setTimeout(res, 500));
+            await fetchDocuments();
+            alert("Document uploaded successfully!");
+        } catch (error) {
+            console.error("Upload failed", error);
+            alert("Failed to upload document.");
+        } finally {
+            setUploading(false);
+            setSelectedDocType(null);
+            e.target.value = '';
+        }
+    };
+
+    const getDocumentStatus = (type) => {
+        if (!documents) return { status: "Not uploaded", found: false, url: null };
+
+        const fieldMap = {
+            'pan': 'PAN',
+            'aadhaar': 'ADHAAR',
+            'passportphoto': 'PassportPhoto'
+        };
+
+        const fieldName = fieldMap[type.toLowerCase()];
+        const url = documents[fieldName];
+
+        if (url) {
+            return {
+                status: "Verified",
+                found: true,
+                url: url
+            };
+        }
+
+        return {
+            status: "Not uploaded",
+            found: false,
+            url: null
+        };
+    };
+
 
     if (loading) {
         return (
@@ -137,9 +217,109 @@ const CustomerDetailView = () => {
     );
 
     const tabs = ['Summary', 'Company Information', 'Files'];
+    const requiredDocuments = [
+        { type: "pan", name: "PAN Card", description: "Upload a clear image of your PAN card" },
+        { type: "aadhaar", name: "Aadhaar Card", description: "Upload a clear image of your Aadhaar card" },
+        { type: "passportphoto", name: "Passport Photo", description: "Upload passport size Photo" }
+    ];
+
+    const renderFiles = () => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {requiredDocuments.map((doc, index) => {
+                const statusInfo = getDocumentStatus(doc.type);
+                return (
+                    <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all h-full flex flex-col"
+                    >
+                        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                            <div className="flex justify-between items-start mb-1">
+                                <h3 className="font-bold text-slate-900">{doc.name}</h3>
+                                {statusInfo.found && (
+                                    <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
+                                        verified
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-5 flex-grow flex flex-col">
+                            <p className="text-xs text-slate-500 mb-6">{doc.description}</p>
+
+                            <div className="mt-auto">
+                                {statusInfo.found ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3 p-3 bg-green-50/50 border border-green-100 rounded-xl">
+                                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                                <CheckCircle2 className="w-5 h-5" />
+                                            </div>
+                                            <p className="text-sm font-semibold text-slate-700">{doc.name} Uploaded</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => window.open(statusInfo.url, "_blank")}
+                                                className="flex-1 flex items-center justify-center gap-2 border border-amber-500 text-amber-600 py-2.5 rounded-xl text-sm font-bold hover:bg-amber-50 transition-colors"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                                View
+                                            </button>
+                                            <button
+                                                onClick={() => handleUploadClick(doc.type)}
+                                                disabled={uploading}
+                                                className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-amber-600 transition-colors disabled:opacity-50"
+                                            >
+                                                <Upload className="w-4 h-4" />
+                                                {uploading && selectedDocType === doc.type ? '...' : 'Upload New'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div
+                                        onClick={() => handleUploadClick(doc.type)}
+                                        className={`group cursor-pointer border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all ${uploading && selectedDocType === doc.type
+                                            ? 'bg-slate-50 border-slate-300'
+                                            : 'border-slate-200 hover:border-amber-400 hover:bg-amber-50/30'
+                                            }`}
+                                    >
+                                        <div className={`p-3 rounded-full transition-colors ${uploading && selectedDocType === doc.type
+                                            ? 'bg-slate-200 text-slate-400'
+                                            : 'bg-slate-100 text-slate-400 group-hover:bg-amber-100 group-hover:text-amber-500'
+                                            }`}>
+                                            {uploading && selectedDocType === doc.type ? (
+                                                <Loader2 className="w-6 h-6 animate-spin" />
+                                            ) : (
+                                                <Upload className="w-6 h-6" />
+                                            )}
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-sm font-bold text-slate-700">
+                                                {uploading && selectedDocType === doc.type ? 'Uploading...' : 'Click to upload'}
+                                            </p>
+                                            <p className="text-[10px] text-slate-400 mt-1">JPG, PNG (Max 2MB)</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+            })}
+        </div>
+    );
 
     return (
         <div className="p-8 space-y-6 bg-slate-50 min-h-screen">
+            <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileChange}
+                accept=".pdf,.jpg,.jpeg,.png"
+            />
+
             {/* Header / Breadcrumbs */}
             <div className="space-y-4">
                 <button
@@ -190,12 +370,8 @@ const CustomerDetailView = () => {
             <div className="mt-6">
                 {activeTab === 'Summary' && renderSummary()}
                 {activeTab === 'Company Information' && renderCompanyInfo()}
-                {activeTab === 'Files' && (
-                    <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                        <FileText className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                        <p className="text-slate-500 font-medium">Document files will appear here</p>
-                    </div>
-                )}
+                {activeTab === 'Files' && renderFiles()}
+
             </div>
         </div>
     );

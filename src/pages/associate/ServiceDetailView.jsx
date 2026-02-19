@@ -19,21 +19,21 @@ const ServiceDetailView = () => {
 
     const mainTabs = [
         { name: 'Summary', icon: LayoutDashboard },
-        { name: 'Task Progress', icon: ListChecks },
-        { name: 'Receipt Allocations', icon: Receipt },
-        { name: 'Notes', icon: FileText },
-        { name: 'Event Logs', icon: History },
-        { name: 'Tasks', icon: Activity },
-        { name: 'Files', icon: FolderOpen },
+        // { name: 'Task Progress', icon: ListChecks },
+        // { name: 'Receipt Allocations', icon: Receipt },
+        // { name: 'Notes', icon: FileText },
+        // { name: 'Event Logs', icon: History },
+        // { name: 'Tasks', icon: Activity },
+        // { name: 'Files', icon: FolderOpen },
         { name: 'Document Collection', icon: FileStack },
         { name: 'Deliverables', icon: Package },
-        { name: 'Payment Requests', icon: CreditCard },
-        { name: 'Chats', icon: MessageSquare },
+        // { name: 'Payment Requests', icon: CreditCard },
+        // { name: 'Chats', icon: MessageSquare },
     ];
 
-    const subTabs = [
-        { name: 'Additional Govt. Payments', icon: IndianRupee },
-    ];
+    // const subTabs = [
+    //     { name: 'Additional Govt. Payments', icon: IndianRupee },
+    // ];
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -103,8 +103,8 @@ const ServiceDetailView = () => {
                                 key={tab.name}
                                 onClick={() => setActiveTab(tab.name)}
                                 className={`flex items-center gap-2 px-5 py-2.5 rounded-t-xl text-[11px] font-bold transition-all whitespace-nowrap border-b-2 ${activeTab === tab.name
-                                        ? 'bg-[#fffbeb] text-[#4b49ac] border-[#4b49ac]'
-                                        : 'text-slate-400 border-transparent hover:text-slate-600 bg-slate-50/50 mr-1'
+                                    ? 'bg-[#fffbeb] text-[#4b49ac] border-[#4b49ac]'
+                                    : 'text-slate-400 border-transparent hover:text-slate-600 bg-slate-50/50 mr-1'
                                     }`}
                             >
                                 {tab.name}
@@ -113,20 +113,20 @@ const ServiceDetailView = () => {
                     </div>
 
                     {/* Sub Tabs */}
-                    <div className="flex gap-2 mt-4">
+                    {/* <div className="flex gap-2 mt-4">
                         {subTabs.map((tab) => (
                             <button
                                 key={tab.name}
                                 onClick={() => setActiveTab(tab.name)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap border ${activeTab === tab.name
-                                        ? 'bg-amber-50 border-amber-200 text-amber-600'
-                                        : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
+                                    ? 'bg-amber-50 border-amber-200 text-amber-600'
+                                    : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
                                     }`}
                             >
                                 {tab.name}
                             </button>
                         ))}
-                    </div>
+                 {/*   </div> */}
                 </div>
             </div>
 
