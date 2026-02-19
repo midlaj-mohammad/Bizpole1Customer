@@ -3,7 +3,7 @@ import { MoreVertical, Search, Filter, ArrowLeft, ArrowRight, X } from 'lucide-r
 import { useNavigate } from 'react-router-dom';
 import * as DealsApi from '../../api/DealsApi';
 import { getSecureItem } from '../../utils/secureStorage';
-import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Trash2, Phone, PhoneOff } from 'lucide-react';
 
 
 const AssociateCustomers = () => {
@@ -76,6 +76,7 @@ const AssociateCustomers = () => {
                                 {/* <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer Category</th> */}
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Created By</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Primary Company</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Communication</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -83,7 +84,7 @@ const AssociateCustomers = () => {
                             {loading ? (
                                 Array(5).fill(0).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        {Array(8).fill(0).map((_, j) => (
+                                        {Array(9).fill(0).map((_, j) => (
                                             <td key={j} className="px-6 py-4">
                                                 <div className="h-4 bg-gray-200 rounded w-full"></div>
                                             </td>
@@ -112,6 +113,23 @@ const AssociateCustomers = () => {
                                         <td className="px-6 py-4 text-sm text-gray-600">{customer.PrimaryCompany?.trim()
                                             ? customer.PrimaryCompany
                                             : customer.CustomerName || '-'}</td>
+                                        <td className="px-6 py-4 text-sm">
+                                            <div className="flex justify-center">
+                                                <span
+                                                    className={`p-2 rounded-xl inline-flex items-center justify-center transition-colors ${customer.communication
+                                                            ? 'bg-red-100 text-red-600'
+                                                            : 'bg-green-100 text-green-600'
+                                                        }`}
+                                                    title={customer.communication ? 'Communication Restricted' : 'Communication Enabled'}
+                                                >
+                                                    {customer.communication
+                                                        ? <PhoneOff className="w-4 h-4" />
+                                                        : <Phone className="w-4 h-4" />
+                                                    }
+                                                </span>
+                                            </div>
+                                        </td>
+
                                         <td className="px-6 py-4 text-sm text-gray-400 relative">
                                             <button
                                                 onClick={(e) => {
@@ -180,7 +198,7 @@ const AssociateCustomers = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
                                         No customers found.
                                     </td>
                                 </tr>
