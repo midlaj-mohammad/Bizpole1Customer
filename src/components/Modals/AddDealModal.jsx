@@ -7,7 +7,7 @@ import DealsApi from "../../api/DealsApi";
 import { getSecureItem } from "../../utils/secureStorage";
 import Select from "react-select";
 
-const AddDealModal = ({ isOpen, onClose, onSuccess, deal, initialData }) => {
+const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) => {
     const navigate = useNavigate();
     console.log("AddDealModal deal prop:", deal);
     const [step, setStep] = useState(1);
@@ -15,6 +15,8 @@ const AddDealModal = ({ isOpen, onClose, onSuccess, deal, initialData }) => {
     const [availableDistricts, setAvailableDistricts] = useState([]);
     const [errors, setErrors] = useState({});
     const [dealType, setDealType] = useState("Individual");
+
+    console.log("AddDealModal isOpen:", isOpen);
 
 
     const [formData, setFormData] = useState({
@@ -114,7 +116,7 @@ const AddDealModal = ({ isOpen, onClose, onSuccess, deal, initialData }) => {
 
         if (!isOpen) return;
         const fetchFullDealDetails = async () => {
-            if (isOpen && deal && deal.id) {
+            if (deal && deal.id) {
                 try {
                     const result = await DealsApi.getDealById(deal.id);
                     if (result.success && result.data) {
@@ -149,7 +151,7 @@ const AddDealModal = ({ isOpen, onClose, onSuccess, deal, initialData }) => {
                 } catch (err) {
                     console.error("Error fetching full deal details", err);
                 }
-            } else if (isOpen && !deal) {
+            } else if (!deal) {
                 // Reset form for fresh create
                 if (initialData && Object.keys(initialData).length > 0) {
                     console.log("Initializing modal with initialData:", initialData);
@@ -197,7 +199,7 @@ const AddDealModal = ({ isOpen, onClose, onSuccess, deal, initialData }) => {
         };
 
         fetchFullDealDetails();
-    }, [isOpen, initialData]);
+    }, [isOpen, deal, initialData]);
 
     // Fetch services when service category changes
     useEffect(() => {

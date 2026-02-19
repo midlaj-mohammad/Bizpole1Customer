@@ -12,6 +12,16 @@ const getDealDataFromParams = (search) => {
     try {
         const params = new URLSearchParams(search);
         if (params.get("create") === "true") {
+
+            console.log({ params });
+
+            console.log({
+                serviceState: params.get("state") || "",
+                serviceCategory: params.get("category") || "",
+                selectedServices: params.get("serviceId") ? [params.get("serviceId")] : [],
+                serviceType: params.get("type") || "individual"
+            });
+
             return {
                 serviceState: params.get("state") || "",
                 serviceCategory: params.get("category") || "",
@@ -34,22 +44,6 @@ const AssociateDeals = () => {
     const [isModalOpen, setIsModalOpen] = useState(!!initialDealData);
     const [preFilledData, setPreFilledData] = useState(initialDealData);
 
-    // Sync effect to handle URL changes (e.g. clicking create deal while already on deals page)
-    useEffect(() => {
-        const dealData = getDealDataFromParams(location.search);
-        if (dealData) {
-            setPreFilledData(dealData);
-            setIsModalOpen(true);
-        }
-    }, [location.search]);
-
-    // Protective sync: If URL says create=true but modal is closed, force it open
-    // This handles edge cases where other state updates might have closed it prematurely
-    useEffect(() => {
-        if (!isModalOpen && getDealDataFromParams(location.search)) {
-            setIsModalOpen(true);
-        }
-    }, [isModalOpen, location.search]);
 
     const [deals, setDeals] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -64,6 +58,41 @@ const AssociateDeals = () => {
 
     const [companyNames, setCompanyNames] = useState({});
     const [existingQuoteDealIds, setExistingQuoteDealIds] = useState([]);
+
+    console.log({ initialDealData });
+    console.log({});
+
+    useEffect(() => {
+        console.log("isModalOpen", isModalOpen);
+    }, [isModalOpen]);
+
+
+    // Sync effect to handle URL changes (e.g. clicking create deal while already on deals page)
+    useEffect(() => {
+        const dealData = getDealDataFromParams(location.search);
+        console.log("dealData", dealData);
+        if (dealData) {
+            console.log("set pre filled data");
+            setPreFilledData(dealData);
+            setIsModalOpen(true);
+        }
+    }, [location.search]);
+
+    // Protective sync: If URL says create=true but modal is closed, force it open
+    // This handles edge cases where other state updates might have closed it prematurely
+    // useEffect(() => {
+    //     if (!isModalOpen && getDealDataFromParams(location.search)) {
+
+    //         console.log("force open modal");
+    //         setIsModalOpen(true);
+    //     }
+    // }, [isModalOpen, location.search]);
+
+
+    useEffect(() => {
+        fetchDeals();
+    }, []);
+
 
     const fetchCompanyNames = async (dealsList) => {
         const uniqueCompanyIds = [...new Set(dealsList.map(d => d.CompanyID).filter(id => id && !companyNames[id]))];
@@ -84,6 +113,10 @@ const AssociateDeals = () => {
     };
 
     console.log("deals", deals);
+
+    ;
+
+
 
     const fetchDeals = async () => {
         setLoading(true);
@@ -118,11 +151,7 @@ const AssociateDeals = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        fetchDeals();
-    }, []);
+    }
 
     const handleDealSuccess = () => {
         fetchDeals();
