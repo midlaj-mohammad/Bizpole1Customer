@@ -13,7 +13,9 @@ import {
     Bell,
     ChevronRight,
     Key,
-    Shield
+    Shield,
+    Receipt,
+    FileSpreadsheet
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { getSecureItem } from '../utils/secureStorage';
@@ -22,27 +24,31 @@ const AssociateLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const user = getSecureItem("user") || { username: "Associate" };
+    const user = getSecureItem("partnerUser") || { username: "Associate" };
 
     const handleLogoutClick = () => {
         setShowLogoutModal(true);
     };
 
     const confirmLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        // Remove partner-specific token and user data
+        localStorage.removeItem("partnerToken");
+        localStorage.removeItem("partnerUser");
         navigate("/");
     };
 
     const sidebarItems = [
         { id: 'dashboard', path: '/associate/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard' },
-        { id: 'leads', path: '/associate/leads', icon: <Users className="w-5 h-5" />, label: 'Leads' },
+        // { id: 'leads', path: '/associate/leads', icon: <Users className="w-5 h-5" />, label: 'Leads' },
         { id: 'deals', path: '/associate/deals', icon: <Handshake className="w-5 h-5" />, label: 'Deals' },
         { id: 'quotes', path: '/associate/quotes', icon: <FileText className="w-5 h-5" />, label: 'Quotes' },
         { id: 'orders', path: '/associate/orders', icon: <ShoppingCart className="w-5 h-5" />, label: 'Orders' },
         { id: 'services', path: '/associate/services', icon: <Briefcase className="w-5 h-5" />, label: 'Services' },
         { id: 'customers', path: '/associate/customers', icon: <Users className="w-5 h-5" />, label: 'Customers' },
         { id: 'companies', path: '/associate/companies', icon: <Briefcase className="w-5 h-5" />, label: 'Companies' },
+        { id: 'receipts', path: '/associate/receipts', icon: <Receipt className="w-5 h-5" />, label: 'Receipts' },
+        { id: 'explore-services', path: '/associate/explore-services', icon: <FileText className="w-5 h-5" />, label: 'Explore' },
+        // { id: 'invoices', path: '/associate/invoices', icon: <FileSpreadsheet className="w-5 h-5" />, label: 'Invoices' },
     ];
 
     const isActive = (path) => {

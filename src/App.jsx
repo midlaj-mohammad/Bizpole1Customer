@@ -57,6 +57,14 @@ import AssociateOrders from "./pages/associate/AssociateOrders";
 import AssociateServices from "./pages/associate/AssociateServices";
 import AssociateCustomers from "./pages/associate/AssociateCustomers";
 import AssociateCompanies from "./pages/associate/AssociateCompanies";
+import DealDetailView from "./pages/associate/DealDetailView";
+import CustomerDetailView from "./pages/associate/CustomerDetailView";
+import CompanyDetailView from "./pages/associate/CompanyDetailView";
+import OrderDetailView from "./pages/associate/OrderDetailView";
+import ServiceDetailView from "./pages/associate/ServiceDetailView";
+import AssociateReceipts from "./pages/associate/AssociateReceipts";
+import AssociateInvoices from "./pages/associate/AssociateInvoices";
+import ExploreServices from "./pages/associate/ExploreServices";
 
 function App() {
   const location = useLocation();
@@ -81,7 +89,7 @@ function App() {
   ];
 
   useEffect(() => {
-    const user = getSecureItem("user");
+    const user = getSecureItem("user" || "partnerUser");
     if (typeof user === "string") {
       try {
         const parsed = JSON.parse(user);
@@ -155,13 +163,21 @@ function App() {
             <Route path="/associate" element={<AssociateLayout />}>
               <Route path="dashboard" element={<AssociateDashboard />} />
               <Route path="profile" element={<AssociateProfile />} />
-              <Route path="leads" element={<AssociateLeads />} />
+              {/* <Route path="leads" element={<AssociateLeads />} /> */}
               <Route path="deals" element={<AssociateDeals />} />
+              <Route path="deals/:id" element={<DealDetailView />} />
               <Route path="quotes" element={<AssociateQuotes />} />
               <Route path="orders" element={<AssociateOrders />} />
+              <Route path="orders/:id" element={<OrderDetailView />} />
               <Route path="services" element={<AssociateServices />} />
+              <Route path="services/:id" element={<ServiceDetailView />} />
               <Route path="customers" element={<AssociateCustomers />} />
+              <Route path="customers/:id" element={<CustomerDetailView />} />
               <Route path="companies" element={<AssociateCompanies />} />
+              <Route path="companies/:id" element={<CompanyDetailView />} />
+              <Route path="receipts" element={<AssociateReceipts />} />
+              <Route path="invoices" element={<AssociateInvoices />} />
+              <Route path="explore-services" element={<ExploreServices />} />
             </Route>
           </Route>
         </Routes>

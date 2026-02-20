@@ -20,6 +20,9 @@ export default function Navbar() {
     { label: "Companies", path: "/companies" },
   ];
 
+
+
+
   // ✅ Auto-open Signin Modal if redirected from Compliance page
   useEffect(() => {
     if (location.state?.openSigninModal) {
@@ -28,6 +31,11 @@ export default function Navbar() {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
+
+
+  localStorage.removeItem("user");
+  localStorage.removeItem("token");
+
 
   // Detect scroll
   useEffect(() => {
@@ -44,6 +52,16 @@ export default function Navbar() {
     setHasToken(!!token);
   }, []);
 
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+
+    if (ref) {
+      localStorage.setItem("PartnerID", ref);
+    }
+  }, []);
+
   const handleNavigate = (path) => {
     navigate(path);
     setMobileMenuOpen(false);
@@ -52,9 +70,8 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b border-gray-200 ${
-          isScrolled ? "bg-white shadow-md" : "bg-transparent"
-        }`}
+        className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b border-gray-200 ${isScrolled ? "bg-white shadow-md" : "bg-transparent"
+          }`}
       >
         <div className="container mx-auto px-4 flex items-center justify-between py-4 md:py-5">
           {/* Logo */}
@@ -75,11 +92,10 @@ export default function Navbar() {
               <li key={index}>
                 <button
                   onClick={() => handleNavigate(item.path)}
-                  className={`transition navli cursor-pointer ${
-                    isScrolled
-                      ? "text-gray-900 hover:text-black"
-                      : "text-gray-600 hover:text-gray-800"
-                  }`}
+                  className={`transition navli cursor-pointer ${isScrolled
+                    ? "text-gray-900 hover:text-black"
+                    : "text-gray-600 hover:text-gray-800"
+                    }`}
                 >
                   {item.label}
                 </button>
@@ -124,9 +140,8 @@ export default function Navbar() {
                       hover: { width: "100%", opacity: 1 },
                     }}
                     transition={{ duration: 0.4, ease: "easeInOut" }}
-                    className={`absolute left-1/2 top-0 h-full ${
-                      isScrolled ? "bg-white" : "bg-[#fbbf24]"
-                    } -translate-x-1/2`}
+                    className={`absolute left-1/2 top-0 h-full ${isScrolled ? "bg-white" : "bg-[#fbbf24]"
+                      } -translate-x-1/2`}
                   />
                   <span className="relative z-10">Sign In</span>
                 </motion.button>
@@ -157,9 +172,8 @@ export default function Navbar() {
 
           {/* Mobile Menu Button */}
           <button
-            className={`md:hidden ${
-              isScrolled ? "text-gray-800" : "text-black"
-            }`}
+            className={`md:hidden ${isScrolled ? "text-gray-800" : "text-black"
+              }`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}

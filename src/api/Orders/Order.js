@@ -1,6 +1,48 @@
 import axiosInstance from "../axiosInstance";
 import { getSecureItem } from "../../utils/secureStorage";
 
+/**
+ * List orders with filters and pagination
+ * @param {Object} filters - { FranchiseeID, EmployeeID, search, isAssociate, AssociateID, ... }
+ * @returns {Promise<Object>} - { success, total, data, page, limit }
+ */
+export const listOrders = async (filters) => {
+  try {
+    const response = await axiosInstance.post("/orderlist", filters);
+    return response.data;
+  } catch (error) {
+    console.error("Error listing orders:", error);
+    throw error;
+  }
+};
+export const initPayment = async (payload) => {
+  try {
+    const response = await axiosInstance.post("https://api.bizpoleindia.in/initiate", payload);
+    return response.data;
+  } catch (error) {
+    console.error("Error initPayment:", error);
+    throw error;
+  }
+};
+
+
+
+
+/**
+ * Get order details by ID
+ * @param {string|number} orderId
+ * @returns {Promise<Object>} - { success, data: { ... } }
+ */
+export const getOrderById = async (orderId) => {
+  try {
+    const response = await axiosInstance.get(`/order/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error getting order by ID:", error);
+    throw error;
+  }
+};
+
 
 // 🔹 Fetch orders for a specific companyId (bypassing storage)
 
@@ -31,9 +73,9 @@ export const getCompanyIdFromStorage = () => {
       }
     }
     // Fallback: try from user object
-    let userDataRaw = getSecureItem("user");
+    let userDataRaw = getSecureItem("user" || "partnerUser");
     if (!userDataRaw) {
-      userDataRaw = window.localStorage.getItem("user") || window.sessionStorage.getItem("user");
+      userDataRaw = window.localStorage.getItem("user" || "partnerUser") || window.sessionStorage.getItem("user" || "partnerUser");
     }
     const userData = userDataRaw && typeof userDataRaw === "string" ? JSON.parse(userDataRaw) : userDataRaw;
     if (userData && userData.Companies && userData.Companies.length > 0) {

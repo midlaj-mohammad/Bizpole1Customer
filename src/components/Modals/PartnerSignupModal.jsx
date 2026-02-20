@@ -5,6 +5,7 @@ import locationData from "../../utils/statesAndDistricts.json";
 import AssociateApi from "../../api/AssociateApi";
 import { getSecureItem, setSecureItem } from "../../utils/secureStorage";
 import { useNavigate } from "react-router-dom";
+import Select from "react-select";
 
 
 const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
@@ -13,11 +14,15 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         associateName: "",
         mobile: "",
         email: "",
-        businessType: "",
         state: "",
         district: "",
         language: "",
         address: "",
+        addressLine1: "",
+        addressLine2: "",
+        postalCode: "",
+        country: "",
+        profession: "",
     });
     const [step, setStep] = useState(1);
     const [kycFiles, setKycFiles] = useState({
@@ -30,6 +35,20 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [apiSuccess, setApiSuccess] = useState(false);
     const [createdAssociateId, setCreatedAssociateId] = useState(null);
+    const [otpValues, setOtpValues] = useState(["", "", "", ""]);
+    const [timer, setTimer] = useState(30);
+    const [isVerifying, setIsVerifying] = useState(false);
+
+    // Timer countdown for OTP
+    useEffect(() => {
+        let interval;
+        if (step === 2 && timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [step, timer]);
 
     const validateStep1 = () => {
         const newErrors = {};
@@ -44,7 +63,7 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
             newErrors.email = "Please enter a valid email address";
         }
-        if (!formData.businessType) newErrors.businessType = "Business type is required";
+        if (!formData.profession) newErrors.profession = "Profession is required";
         if (!formData.state) newErrors.state = "State is required";
         if (!formData.district) newErrors.district = "District is required";
         if (!formData.language) newErrors.language = "Preferred language is required";
@@ -94,60 +113,142 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
 
     const handleNextStep = async (e) => {
         e.preventDefault();
-        if (validateStep1()) {
-            setIsSubmitting(true);
-            try {
-                const userObj = getSecureItem("user") || {};
 
-                // Map names to IDs
-                const selectedState = locationData.states.find(s => s.stateName === formData.state);
-                const stateId = selectedState ? selectedState.stateId : null;
+        if (!validateStep1()) return;
 
-                const selectedDistrict = selectedState?.districts.find(d => d.districtName === formData.district);
-                const districtId = selectedDistrict ? selectedDistrict.districtId : null;
+        setIsSubmitting(true);
 
-                const payload = {
-                    AssociateName: formData.associateName,
-                    Mobile: formData.mobile,
-                    Email: formData.email,
-                    Address: formData.address,
-                    State: stateId,
-                    District: districtId,
-                    PreferredLanguage: formData.language,
-                    CreatedBy: userObj.EmployeeID || null,
-                    EmployeeID: userObj.EmployeeID || null,
-                    FranchiseeID: userObj.FranchiseeID || null
-                };
+        try {
+            const userObj = getSecureItem("partnerUser") || {};
 
-                const response = await AssociateApi.createAssociate(payload);
-                if (response.success) {
-                    setCreatedAssociateId(response.data.AssociateID);
+            // ✅ Combine address fields into ONE string
+            const fullAddress = [
+                formData.addressLine1,
+                formData.addressLine2,
+                formData.postalCode,
+                formData.country,
+            ]
+                .filter(Boolean)
+                .join(", ");
 
-                    // Store token and user for auto-login
-                    if (response.token && response.user) {
-                        setSecureItem("token", response.token);
-                        setSecureItem("user", response.user);
-                    }
+            const payload = {
+                AssociateName: formData.associateName,
+                Mobile: formData.mobile,
+                Email: formData.email,
+                Address: fullAddress, // ✅ single combined string
+                State: formData.state,
+                District: formData.district,
+                PreferredLanguage: formData.language,
+                CreatedBy: userObj.EmployeeID || null,
+                EmployeeID: userObj.EmployeeID || null,
+                FranchiseeID: userObj.FranchiseeID || null,
+                Profession: formData.profession,
+            };
 
+            const response = await AssociateApi.createAssociate(payload);
+
+            if (response.success) {
+                setCreatedAssociateId(response.data.AssociateID);
+
+                // Request OTP after associate creation
+                try {
+                    await AssociateApi.requestAssociateEmailOtp(formData.email);
                     setStep(2);
-                } else {
-                    setErrors(prev => ({ ...prev, api: response.message || "Failed to create associate" }));
+                    setTimer(30);
+                    setOtpValues(["", "", "", ""]);
+                } catch (otpErr) {
+                    console.error("OTP request error during signup:", otpErr);
+                    setErrors((prev) => ({
+                        ...prev,
+                        api: "Associate created but failed to send OTP. Please try login or contact support.",
+                    }));
                 }
-            } catch (error) {
-                console.error("Associate creation error:", error);
-                setErrors(prev => ({
+            } else {
+                setErrors((prev) => ({
                     ...prev,
-                    api: error.response?.data?.message || "An error occurred while creating associate"
+                    api: response.message || "Failed to create associate",
                 }));
-            } finally {
-                setIsSubmitting(false);
+            }
+        } catch (error) {
+            setErrors((prev) => ({
+                ...prev,
+                api:
+                    error.response?.data?.message ||
+                    "An error occurred while creating associate",
+            }));
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleBackStep = () => {
+        if (step === 2) setStep(1);
+        else if (step === 3) setStep(2);
+    };
+
+    const handleOtpChange = async (index, value) => {
+        if (value.length <= 1) {
+            const newOtpValues = [...otpValues];
+            newOtpValues[index] = value;
+            setOtpValues(newOtpValues);
+
+            // Auto focus next input
+            if (value && index < 3) {
+                const nextInput = document.getElementById(`signup-otp-${index + 1}`);
+                nextInput?.focus();
+            }
+
+            // If all OTP fields are filled, verify OTP
+            if (index === 3 && value && newOtpValues.every((v) => v.length === 1)) {
+                setIsVerifying(true);
+                setErrors({});
+                try {
+                    const otp = newOtpValues.join("");
+                    const response = await AssociateApi.verifyAssociateEmailOtp(formData.email, otp);
+
+                    if (response.success) {
+                        // Store token and user
+                        if (response.token && response.user) {
+                            localStorage.setItem('partnerToken', response.token);
+                            localStorage.setItem('EmployeeID', response.user.EmployeeID);
+                            localStorage.setItem('FranchiseeID', response.user.FranchiseeID);
+                            localStorage.setItem('AssociateID', response.user.id);
+                            setSecureItem("partnerUser", response.user);
+                        }
+                        setStep(3); // Move to KYC
+                    } else {
+                        setErrors({ otp: response.message || "Invalid OTP" });
+                    }
+                } catch (err) {
+                    setErrors({ otp: err.response?.data?.message || "OTP verification failed" });
+                } finally {
+                    setIsVerifying(false);
+                }
             }
         }
     };
 
+    const handleOtpKeyDown = (index, e) => {
+        if (e.key === 'Backspace' && !otpValues[index] && index > 0) {
+            const prevInput = document.getElementById(`signup-otp-${index - 1}`);
+            prevInput?.focus();
+        }
+    };
 
-    const handleBackStep = () => {
-        setStep(1);
+    const handleResendOtp = async () => {
+        if (timer === 0) {
+            setIsSubmitting(true);
+            try {
+                await AssociateApi.requestAssociateEmailOtp(formData.email);
+                setTimer(30);
+                setOtpValues(["", "", "", ""]);
+                setErrors({});
+            } catch (err) {
+                setErrors({ api: "Failed to resend OTP" });
+            } finally {
+                setIsSubmitting(false);
+            }
+        }
     };
 
     const handleFinalSubmit = async () => {
@@ -193,6 +294,11 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                     district: "",
                     language: "",
                     address: "",
+                    addressLine1: "",
+                    addressLine2: "",
+                    postalCode: "",
+                    country: "",
+                    profession: "",
                 });
                 setKycFiles({
                     pan: null,
@@ -303,26 +409,27 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                                     {errors.email && <span className="text-xs text-red-500 ml-2">{errors.email}</span>}
                                 </div>
 
-                                {/* Business Type */}
+                                {/* Profession */}
                                 <div className="flex flex-col gap-2 relative">
                                     <label className="text-sm font-semibold text-gray-700">
-                                        <span className="text-red-500 mr-1">*</span> Select Business Type
+                                        <span className="text-red-500 mr-1">*</span> Select Profession
                                     </label>
                                     <div className="relative">
                                         <select
-                                            name="businessType"
-                                            value={formData.businessType}
+                                            name="profession"
+                                            value={formData.profession || ""}
                                             onChange={handleChange}
-                                            className={`w-full appearance-none px-4 py-3 rounded-2xl border ${errors.businessType ? 'border-red-400 focus:ring-red-100' : 'border-yellow-400 focus:ring-yellow-100'} focus:outline-none focus:ring-2 transition-all text-gray-600 bg-white`}
+                                            className={`w-full appearance-none px-4 py-3 rounded-2xl border ${errors.profession ? 'border-red-400 focus:ring-red-100' : 'border-yellow-400 focus:ring-yellow-100'} focus:outline-none focus:ring-2 transition-all text-gray-600 bg-white`}
                                         >
-                                            <option value="" disabled>Select...</option>
-                                            <option value="individual">Individual</option>
-                                            <option value="partnership">Partnership</option>
-                                            <option value="pvt_ltd">Private Limited</option>
+                                            <option value="" disabled>Select profession...</option>
+                                            <option value="lawyer">Lawyer</option>
+                                            <option value="consultant">Consultant</option>
+                                            <option value="engineer">Engineer</option>
+                                            <option value="doctor">Doctor</option>
                                         </select>
                                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                                     </div>
-                                    {errors.businessType && <span className="text-xs text-red-500 ml-2">{errors.businessType}</span>}
+                                    {errors.profession && <span className="text-xs text-red-500 ml-2">{errors.profession}</span>}
                                 </div>
 
                                 {/* State */}
@@ -330,23 +437,52 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                                     <label className="text-sm font-semibold text-gray-700">
                                         <span className="text-red-500 mr-1">*</span> State
                                     </label>
-                                    <div className="relative">
-                                        <select
-                                            name="state"
-                                            value={formData.state}
-                                            onChange={handleChange}
-                                            className={`w-full appearance-none px-4 py-3 rounded-2xl border ${errors.state ? 'border-red-400 focus:ring-red-100' : 'border-yellow-400 focus:ring-yellow-100'} focus:outline-none focus:ring-2 transition-all text-gray-600 bg-white`}
-                                        >
-                                            <option value="" disabled>Select state...</option>
-                                            {locationData.states.map((state) => (
-                                                <option key={state.stateId} value={state.stateName}>
-                                                    {state.stateName}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                                    </div>
-                                    {errors.state && <span className="text-xs text-red-500 ml-2">{errors.state}</span>}
+
+                                    <Select
+                                        options={locationData.states.map((state) => ({
+                                            value: state.stateName,
+                                            label: state.stateName,
+                                        }))}
+                                        value={
+                                            formData.state
+                                                ? { value: formData.state, label: formData.state }
+                                                : null
+                                        }
+                                        onChange={(selected) =>
+                                            setFormData({
+                                                ...formData,
+                                                state: selected ? selected.value : "",
+                                                district: "",
+                                            })
+                                        }
+                                        placeholder="Select state..."
+                                        isSearchable
+                                        styles={{
+                                            control: (base, state) => ({
+                                                ...base,
+                                                borderRadius: "1rem", // rounded-2xl
+                                                padding: "4px",
+                                                borderColor: errors.state
+                                                    ? "#f87171" // red-400
+                                                    : "#facc15", // yellow-400
+                                                boxShadow: state.isFocused
+                                                    ? errors.state
+                                                        ? "0 0 0 2px #fee2e2" // red-100
+                                                        : "0 0 0 2px #fef9c3" // yellow-100
+                                                    : "none",
+                                                "&:hover": {
+                                                    borderColor: errors.state ? "#f87171" : "#facc15",
+                                                },
+                                            }),
+                                        }}
+                                    />
+
+
+                                    {errors.state && (
+                                        <span className="text-xs text-red-500 ml-2">
+                                            {errors.state}
+                                        </span>
+                                    )}
                                 </div>
 
                                 {/* District */}
@@ -354,26 +490,55 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                                     <label className="text-sm font-semibold text-gray-700">
                                         <span className="text-red-500 mr-1">*</span> District
                                     </label>
-                                    <div className="relative">
-                                        <select
-                                            name="district"
-                                            value={formData.district}
-                                            onChange={handleChange}
-                                            disabled={!formData.state}
-                                            className={`w-full appearance-none px-4 py-3 rounded-2xl border ${errors.district ? 'border-red-400 focus:ring-red-100' : 'border-yellow-400 focus:ring-yellow-100'} focus:outline-none focus:ring-2 transition-all text-gray-600 bg-white disabled:bg-gray-50 disabled:border-gray-200`}
-                                        >
-                                            <option value="" disabled>
-                                                {formData.state ? "Select district..." : "Select state first"}
-                                            </option>
-                                            {availableDistricts.map((district) => (
-                                                <option key={district.districtId} value={district.districtName}>
-                                                    {district.districtName}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                                    </div>
-                                    {errors.district && <span className="text-xs text-red-500 ml-2">{errors.district}</span>}
+
+                                    <Select
+                                        options={availableDistricts.map((district) => ({
+                                            value: district.districtName,
+                                            label: district.districtName,
+                                        }))}
+                                        value={
+                                            formData.district
+                                                ? { value: formData.district, label: formData.district }
+                                                : null
+                                        }
+                                        onChange={(selected) =>
+                                            setFormData({
+                                                ...formData,
+                                                district: selected ? selected.value : "",
+                                            })
+                                        }
+                                        placeholder={
+                                            formData.state ? "Select district..." : "Select state first"
+                                        }
+                                        isSearchable
+                                        isDisabled={!formData.state}
+                                        styles={{
+                                            control: (base, state) => ({
+                                                ...base,
+                                                borderRadius: "1rem",
+                                                padding: "4px",
+                                                backgroundColor: !formData.state ? "#f9fafb" : "white",
+                                                borderColor: errors.district
+                                                    ? "#f87171"
+                                                    : "#facc15",
+                                                boxShadow: state.isFocused
+                                                    ? errors.district
+                                                        ? "0 0 0 2px #fee2e2"
+                                                        : "0 0 0 2px #fef9c3"
+                                                    : "none",
+                                                "&:hover": {
+                                                    borderColor: errors.district ? "#f87171" : "#facc15",
+                                                },
+                                            }),
+                                        }}
+                                    />
+
+
+                                    {errors.district && (
+                                        <span className="text-xs text-red-500 ml-2">
+                                            {errors.district}
+                                        </span>
+                                    )}
                                 </div>
 
                                 {/* Preferred Language */}
@@ -398,17 +563,55 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                                     {errors.language && <span className="text-xs text-red-500 ml-2">{errors.language}</span>}
                                 </div>
 
-
-                                {/* Address */}
+                                {/* Address Line 1 */}
                                 <div className="flex flex-col gap-2 md:col-span-2">
-                                    <label className="text-sm font-semibold text-gray-700">Address</label>
-                                    <textarea
-                                        name="address"
-                                        value={formData.address}
+                                    <label className="text-sm font-semibold text-gray-700">Address Line 1 (House No, Building, Street)</label>
+                                    <input
+                                        type="text"
+                                        name="addressLine1"
+                                        value={formData.addressLine1 || ""}
                                         onChange={handleChange}
-                                        rows="4"
-                                        placeholder="Enter address"
-                                        className="w-full px-4 py-3 rounded-2xl border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-all placeholder:text-gray-300 resize-none"
+                                        placeholder="Enter Address Line 1"
+                                        className="w-full px-4 py-3 rounded-2xl border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-all placeholder:text-gray-300"
+                                    />
+                                </div>
+
+                                {/* Address Line 2 */}
+                                <div className="flex flex-col gap-2 md:col-span-2">
+                                    <label className="text-sm font-semibold text-gray-700">Address Line 2 (Area, Apartment, Landmark – optional)</label>
+                                    <input
+                                        type="text"
+                                        name="addressLine2"
+                                        value={formData.addressLine2 || ""}
+                                        onChange={handleChange}
+                                        placeholder="Enter Address Line 2"
+                                        className="w-full px-4 py-3 rounded-2xl border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-all placeholder:text-gray-300"
+                                    />
+                                </div>
+
+                                {/* Postal Code / ZIP Code */}
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm font-semibold text-gray-700">Postal Code / ZIP Code</label>
+                                    <input
+                                        type="text"
+                                        name="postalCode"
+                                        value={formData.postalCode || ""}
+                                        onChange={handleChange}
+                                        placeholder="Enter Postal Code / ZIP Code"
+                                        className="w-full px-4 py-3 rounded-2xl border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-all placeholder:text-gray-300"
+                                    />
+                                </div>
+
+                                {/* Country */}
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm font-semibold text-gray-700">Country</label>
+                                    <input
+                                        type="text"
+                                        name="country"
+                                        value={formData.country || ""}
+                                        onChange={handleChange}
+                                        placeholder="Enter Country"
+                                        className="w-full px-4 py-3 rounded-2xl border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-all placeholder:text-gray-300"
                                     />
                                 </div>
 
@@ -443,6 +646,74 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                                 </div>
                             </form>
                         </motion.div>
+                    ) : step === 2 ? (
+                        <motion.div
+                            key="otp-step"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="p-8 flex flex-col items-center"
+                        >
+                            <button
+                                onClick={() => setStep(1)}
+                                className="self-start flex items-center text-gray-500 hover:text-gray-800 transition-colors mb-6 group"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 group-hover:-translate-x-1 transition-transform">
+                                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                                </svg>
+                                Back to Form
+                            </button>
+
+                            <h3 className="text-2xl font-bold text-[#1e293b] mb-4">OTP Verification</h3>
+                            <p className="text-center text-gray-500 mb-8 max-w-sm">
+                                We've sent a 4-digit verification code to <br />
+                                <span className="font-bold text-gray-800">{formData.email}</span>
+                            </p>
+
+                            <div className="flex gap-4 mb-8">
+                                {[0, 1, 2, 3].map((index) => (
+                                    <input
+                                        key={index}
+                                        id={`signup-otp-${index}`}
+                                        type="text"
+                                        maxLength="1"
+                                        value={otpValues[index]}
+                                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                                        className="w-16 h-16 border-2 border-yellow-400 rounded-2xl text-center text-2xl font-bold outline-none focus:ring-4 focus:ring-yellow-100 transition-all"
+                                    />
+                                ))}
+                            </div>
+
+                            <div className="text-lg font-mono text-gray-600 mb-4">
+                                {`00:${timer.toString().padStart(2, "0")}`}
+                            </div>
+
+                            <p className="text-sm text-gray-500 mb-8">
+                                Didn't receive code?{" "}
+                                <button
+                                    onClick={handleResendOtp}
+                                    disabled={timer > 0 || isSubmitting}
+                                    className="text-yellow-600 font-bold hover:text-yellow-700 disabled:text-gray-300 disabled:cursor-not-allowed"
+                                >
+                                    Resend OTP
+                                </button>
+                            </p>
+
+                            {isVerifying && (
+                                <div className="flex items-center gap-2 text-yellow-600 font-semibold mb-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Verifying...
+                                </div>
+                            )}
+
+                            {errors.otp && (
+                                <div className="flex items-center gap-1 text-sm text-red-500 font-medium mb-4">
+                                    <AlertCircle className="w-4 h-4" />
+                                    <span>{errors.otp}</span>
+                                </div>
+                            )}
+                        </motion.div>
                     ) : (
                         <motion.div
                             key="kyc-step"
@@ -463,7 +734,7 @@ const PartnerSignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                                         <path d="M19 12H5M12 19l-7-7 7-7" />
                                     </svg>
                                 </motion.div>
-                                Back to Form
+                                Back to Verification
                             </button>
 
                             <div className="mb-8">

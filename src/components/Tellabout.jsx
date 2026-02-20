@@ -88,6 +88,10 @@ const Tellabout = () => {
     fetchCountryCodes();
   }, []);
 
+  const partnerIdFromStorage = localStorage.getItem("PartnerID");
+  const isAssociate = !!partnerIdFromStorage;
+  const AssociateID = partnerIdFromStorage ? Number(partnerIdFromStorage) : null;
+
   // ✅ Form data state
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -132,6 +136,8 @@ const Tellabout = () => {
         Website: "",
         PinCode: "",
         PrimaryCompany: 1,
+        AssociateID: AssociateID,
+        isAssociate: isAssociate,
       },
     ],
   });
@@ -235,6 +241,14 @@ const Tellabout = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // const user = getSecureItem("user") || {};
+    // const isAssociate = user.role === "associate";
+    // const AssociateID = isAssociate ? user.id : null;
+
+    const partnerIdFromStorage = localStorage.getItem("PartnerID");
+    const isAssociate = !!partnerIdFromStorage;
+    const AssociateID = partnerIdFromStorage ? Number(partnerIdFromStorage) : null;
+
     if (!formData.FranchiseeID) {
       alert("Please select language, state, and district to assign a franchisee before submitting.");
       return;
@@ -264,12 +278,18 @@ const Tellabout = () => {
         Sector: updatedFormData.Companies[0].Sector,
         BusinessNature: updatedFormData.Companies[0].BusinessNature,
         Website: updatedFormData.Companies[0].Website,
+        AssociateID: AssociateID,
+        isAssociate: isAssociate,
         PinCode: updatedFormData.PinCode,
         PrimaryCompany: 1,
       };
+
+
       const payload = {
         ...updatedFormData,
         Companies: [company],
+        isAssociate,
+        AssociateID
       };
       const res = await createCustomer(payload);
       console.log("Customer created:", res);
@@ -280,7 +300,7 @@ const Tellabout = () => {
       }
       // Store and log location state
       if (location && location.state) {
-       setSecureItem('location', JSON.stringify(location.state));
+        setSecureItem('location', JSON.stringify(location.state));
         console.log('Location state:', location.state);
       }
       // Pass type id to subscription page

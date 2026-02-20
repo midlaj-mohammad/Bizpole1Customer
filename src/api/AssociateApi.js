@@ -16,6 +16,9 @@ export const createAssociate = async (payload) => {
     }
 };
 export const getAssociateById = async (id) => {
+
+    console.log("checking......");
+
     try {
         const response = await axiosInstance.get(`/associateById/${id}`);
         return response.data;
@@ -93,8 +96,8 @@ export const uploadAssociateDocuments = async (formData) => {
     console.log("checking...");
     console.log({ formData });
 
-    console.log(localStorage.getItem("token"));
-
+    const token = localStorage.getItem("partnerToken"); // Use partner token
+    console.log(token);
 
     try {
         const response = api.post(
@@ -102,7 +105,7 @@ export const uploadAssociateDocuments = async (formData) => {
             formData,
             {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                    Authorization: `Bearer ${token}`
                 }
             }
         );
@@ -127,6 +130,64 @@ export const getAssociateDocuments = async (associateId) => {
     }
 };
 
+
+/**
+ * List associate receipts (verified payments)
+ * @param {Object} filters - filters including AssociateID
+ */
+export const listAssociateReceipts = async (filters) => {
+    try {
+        const response = await axiosInstance.post("/associate-receipts", filters);
+        return response.data;
+    } catch (error) {
+        console.error("Error listing associate receipts:", error);
+        throw error;
+    }
+};
+
+
+/**
+ * Get associate receipt details
+ * @param {string|number} paymentId
+ */
+export const getAssociateReceiptDetails = async (paymentId) => {
+    try {
+        const response = await axiosInstance.post("/associate-receipt-details", { paymentId });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching receipt details:", error);
+        throw error;
+    }
+};
+
+/**
+ * Get invoices for an order or quote
+ * @param {Object} params - { orderId, quoteId }
+ */
+export const getInvoicesForService = async (params) => {
+    try {
+        const response = await axiosInstance.post("/getinvoiceforservice", params);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching invoices:", error);
+        throw error;
+    }
+};
+
+/**
+ * Get receipts for an order
+ * @param {string|number} orderId - The order ID
+ */
+export const getReceiptsForOrder = async (orderId) => {
+    try {
+        const response = await axiosInstance.get(`/receipt/${orderId}?type=order`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching receipts for order:", error);
+        throw error;
+    }
+};
+
 export default {
     createAssociate,
     updateAssociate,
@@ -134,4 +195,12 @@ export default {
     requestAssociateEmailOtp,
     verifyAssociateEmailOtp,
     uploadAssociateDocuments,
+    listAssociateReceipts,
+    getAssociateReceiptDetails,
+    getInvoicesForService,
+    getReceiptsForOrder
 };
+
+
+
+

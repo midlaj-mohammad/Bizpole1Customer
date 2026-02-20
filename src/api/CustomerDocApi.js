@@ -4,7 +4,7 @@ import { setSecureItem, getSecureItem } from "../utils/secureStorage";
 // Helper function to safely get user data (same as in React component)
 const getUserData = () => {
   try {
-    const userStr = getSecureItem("user");
+    const userStr = getSecureItem("user" || "partnerUser");
     
     // If userStr is already an object, return it directly
     if (typeof userStr === 'object' && userStr !== null) {

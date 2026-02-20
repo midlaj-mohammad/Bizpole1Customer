@@ -13,9 +13,13 @@ import {
     ArrowDownRight
 } from 'lucide-react';
 import { getSecureItem } from '../utils/secureStorage';
+import { useNavigate } from 'react-router-dom';
 
 const AssociateDashboard = () => {
-    const user = getSecureItem("user") || { username: "Associate" };
+    const navigate = useNavigate();
+
+    const user = getSecureItem("partnerUser") || { username: "Associate" };
+
 
     const stats = [
         {
@@ -73,6 +77,26 @@ const AssociateDashboard = () => {
                 <h1 className="text-3xl font-bold text-slate-900">Welcome back, {user.username}!</h1>
                 <p className="text-slate-500 mt-1">Here's what's happening with your business today.</p>
             </div>
+
+            {/* Explore Services CTA */}
+            <div className="bg-gradient-to-r from-yellow-50 to-white border border-yellow-200 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+                <div>
+                    <h2 className="text-xl font-bold text-slate-900">
+                        Discover Services to Grow Your Business 🚀
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Explore available services and find the best solutions for your clients.
+                    </p>
+                </div>
+
+                <button
+                    onClick={() => navigate("/associate/explore-services")}
+                    className="px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg"
+                >
+                    Explore Services
+                </button>
+            </div>
+
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

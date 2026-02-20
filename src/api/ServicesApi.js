@@ -12,6 +12,8 @@ export const getServices = async ({ page = 1, limit = 10, filter = "", categoryI
 
 // ✅ Fetch services for a specific category
 export const getServicesByCategory = async (categoryId, { page = 1, limit = 2 } = {}) => {
+  console.log({ categoryId });
+
   if (!categoryId) return { data: [] };
   const params = { page, limit };
 

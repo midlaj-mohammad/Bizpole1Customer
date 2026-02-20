@@ -33,7 +33,7 @@ const PlansAndPricing = () => {
       const data = await upsertQuote(quoteData);
 
       if (data && data.QuoteID) {
-        const user = getSecureItem("user");
+        const user = getSecureItem("user" || "partnerUser");
         if (user) {
           user.QuoteID = data.QuoteID;
           setSecureItem("user", user);
@@ -86,7 +86,7 @@ const PlansAndPricing = () => {
       const data = await upsertQuote(quoteData);
 
       if (data && data.QuoteID) {
-        const user = getSecureItem("user");
+        const user = getSecureItem("user" || "partnerUser");
         if (user) {
           user.QuoteID = data.QuoteID;
           setSecureItem("user", user);
