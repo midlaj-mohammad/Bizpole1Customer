@@ -41,8 +41,9 @@ const ServiceDetailView = () => {
             setLoading(true);
             try {
                 const response = await getServiceDetailById(id);
-                if (response.success) {
-                    setService(response.data);
+                console.log("response", response);
+                if (response) {
+                    setService(response);
                 }
             } catch (err) {
                 console.error("fetchDetails error", err);

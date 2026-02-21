@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import locationData from "../../utils/statesAndDistricts.json";
 import DealsApi from "../../api/DealsApi";
 import { getSecureItem } from "../../utils/secureStorage";
-import Select from "react-select";
+import Select, { components } from "react-select";
 
 const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) => {
     const navigate = useNavigate();
@@ -596,6 +596,28 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
         }
     };
 
+    const CategoryOption = (props) => {
+        return (
+            <components.Option {...props}>
+                <div className="flex items-center justify-between w-full">
+                    <span>{props.data.label}</span>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onClose();
+                            navigate(`/associate/explore-services?category=${props.data.value}`);
+                        }}
+                        className="p-1 hover:bg-[#4b49ac]/10 rounded-md transition-colors text-[#4b49ac] flex items-center justify-center"
+                    >
+                        <Eye className="w-4 h-4" />
+                    </button>
+                </div>
+            </components.Option>
+        );
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -998,6 +1020,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                                 isDisabled={!formData.serviceState}
                                                 className="react-select-container"
                                                 classNamePrefix="react-select"
+                                                components={{ Option: CategoryOption }}
                                             />
 
                                             {errors.serviceCategory && (
@@ -1018,7 +1041,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                                 <label className="text-sm font-medium text-gray-700 block">
                                                     Services (Hold Ctrl/Cmd to select multiple)
                                                 </label>
-                                                <button
+                                                {/* <button
                                                     type="button"
                                                     onClick={() => {
                                                         onClose();
@@ -1028,7 +1051,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                                 >
                                                     <Eye className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                                                     Explore Services
-                                                </button>
+                                                </button> */}
                                             </div>
                                             <select
                                                 multiple

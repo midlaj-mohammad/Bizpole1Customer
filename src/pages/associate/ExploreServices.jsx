@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getServiceCategories, getServices, getServicesByCategory } from '../../api/ServicesApi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Oval } from 'react-loader-spinner';
 
 const INDIAN_STATES = [
@@ -330,8 +330,9 @@ function ServiceModal({ service, onClose }) {
 }
 
 function ExploreServices() {
+    const [searchParams] = useSearchParams();
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
     const [categories, setCategories] = useState([]);
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -345,20 +346,28 @@ function ExploreServices() {
         total: 0
     });
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const data = await getServiceCategories();
-                setCategories(data.data);
-            } catch (error) {
-                console.error('Error fetching categories:', error);
-            } finally {
-                setCategoriesLoading(false);
-            }
-        };
+    const fetchCategories = async () => {
+        try {
+            const data = await getServiceCategories();
+            setCategories(data.data);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        } finally {
+            setCategoriesLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchCategories();
     }, []);
+
+    useEffect(() => {
+        const cat = searchParams.get('category');
+        if (cat) {
+            setSelectedCategory(cat);
+            setPagination(prev => ({ ...prev, currentPage: 1 }));
+        }
+    }, [searchParams]);
 
 
     useEffect(() => {
