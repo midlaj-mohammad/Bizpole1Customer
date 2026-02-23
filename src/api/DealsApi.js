@@ -58,6 +58,16 @@ export const listAssociateCompanies = async (payload) => {
     }
 };
 
+export const saveAssociateCustomer = async (payload) => {
+    try {
+        const response = await axiosInstance.post("/customer/create-associate", payload);
+        return response.data;
+    } catch (error) {
+        console.error("Error saving associate customer:", error);
+        throw error;
+    }
+};
+
 /**
  * Get single deal details by ID
  * @param {string|number} id - Deal ID
@@ -123,6 +133,7 @@ export default {
     listDeals,
     listAssociateCustomers,
     listAssociateCompanies,
+    saveAssociateCustomer,
     getDealById,
     getCompanyDetails,
     requestQuote,

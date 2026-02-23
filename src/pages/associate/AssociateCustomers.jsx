@@ -3,7 +3,8 @@ import { MoreVertical, Search, Filter, ArrowLeft, ArrowRight, X } from 'lucide-r
 import { useNavigate } from 'react-router-dom';
 import * as DealsApi from '../../api/DealsApi';
 import { getSecureItem } from '../../utils/secureStorage';
-import { Eye, Pencil, Trash2, Phone, PhoneOff } from 'lucide-react';
+import { Eye, Pencil, Trash2, Phone, PhoneOff, Users, Plus } from 'lucide-react';
+import AddCustomerModal from '../../components/Modals/AddCustomerModal';
 
 
 const AssociateCustomers = () => {
@@ -16,6 +17,7 @@ const AssociateCustomers = () => {
     const [pageSize, setPageSize] = useState(10);
     const [searchTerm, setSearchTerm] = useState('');
     const [openMenuId, setOpenMenuId] = useState(null);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
 
     const fetchCustomers = async () => {
@@ -61,6 +63,13 @@ const AssociateCustomers = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-2 bg-[#4b49ac] text-white rounded-lg font-semibold hover:bg-[#3f3da0] shadow-md shadow-[#4b49ac]/20 transition-all active:scale-95"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Customer
+                    </button>
                 </div>
             </div>
 
@@ -117,8 +126,8 @@ const AssociateCustomers = () => {
                                             <div className="flex justify-center">
                                                 <span
                                                     className={`p-2 rounded-xl inline-flex items-center justify-center transition-colors ${customer.communication
-                                                            ? 'bg-red-100 text-red-600'
-                                                            : 'bg-green-100 text-green-600'
+                                                        ? 'bg-red-100 text-red-600'
+                                                        : 'bg-green-100 text-green-600'
                                                         }`}
                                                     title={customer.communication ? 'Communication Restricted' : 'Communication Enabled'}
                                                 >
@@ -250,6 +259,12 @@ const AssociateCustomers = () => {
                     </div>
                 </div>
             </div>
+
+            <AddCustomerModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSuccess={fetchCustomers}
+            />
         </div>
     );
 };
