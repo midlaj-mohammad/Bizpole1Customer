@@ -100,7 +100,7 @@ export const uploadAssociateDocuments = async (formData) => {
     console.log(token);
 
     try {
-        const response = api.post(
+        const response = await api.post(
             "/associate/upload-documents",
             formData,
             {
