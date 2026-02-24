@@ -656,6 +656,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                     state: c.State || c.state || "",
                     district: c.District || c.district || "",
                     preferredLanguage: c.PreferredLanguage || c.preferredLanguage || "",
+                    communication: c.communication === 1 || c.communication === true || false,
                 }));
             } else {
                 // Fallback to existing object
@@ -672,6 +673,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                     state: customer.State || customer.state || "",
                     district: customer.District || customer.district || "",
                     preferredLanguage: customer.PreferredLanguage || customer.preferredLanguage || "",
+                    communication: customer.communication === 1 || customer.communication === true || false,
                 }));
             }
         } catch (err) {
@@ -712,6 +714,10 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                 }));
                 // Set customers directly from the company details response
                 setAssociateCustomersForCompany(c.Customers || []);
+                if (c.Customers && c.Customers.length > 0) {
+                    setUseExistingCustomer(true);
+                    setShowCustomerDropdown(true);
+                }
             } else {
                 // Fallback to existing object and separate fetch
                 setFormData(prev => ({
@@ -747,6 +753,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                 ...prev,
                 customerName: "", mobile: "", email: "", country: "India",
                 pincode: "", state: "", district: "", preferredLanguage: "",
+                communication: false,
             }));
         } else {
             setUseExistingCustomer(true);
@@ -1013,7 +1020,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                     <div className="relative">
                                         <div className="flex items-center justify-between mb-1">
                                             <label className="text-sm font-medium text-gray-700">Company Name</label>
-                                            <IfExistingButton active={useExistingCompany} onClick={toggleExistingCompany} />
+                                            {!selectedExistingCompany && <IfExistingButton active={useExistingCompany} onClick={toggleExistingCompany} />}
                                         </div>
 
                                         {useExistingCompany ? (
@@ -1371,7 +1378,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                     <div className="relative">
                                         <div className="flex items-center justify-between mb-1">
                                             <label className="text-sm font-medium text-gray-700">Customer Name</label>
-                                            <IfExistingButton active={useExistingCustomer} onClick={toggleExistingCustomer} />
+                                            {!selectedExistingCustomer && <IfExistingButton active={useExistingCustomer} onClick={toggleExistingCustomer} />}
                                         </div>
 
                                         {useExistingCustomer ? (
