@@ -19,35 +19,66 @@ const ExistingEntityDropdown = ({ type, onSelect, onClose, apiUrl }) => {
         try {
             const user = getSecureItem("partnerUser") || {};
             const associateId = user.id || null;
+
             const endpoint = `${apiUrl}/${type === "customer" ? "customer" : "company"}/associate-list`;
 
             const response = await fetch(endpoint, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                     Authorization: `Bearer ${getSecureItem("partnerToken")}`
                 },
                 body: JSON.stringify({
                     AssociateID: associateId,
-                    search: searchQuery,
+                    search: searchQuery || "",
                     page: 1,
-                    limit: 20
+                    limit: 50
                 })
             });
+
             const data = await response.json();
-            if (data.success) {
-                setResults(data.data || []);
+
+            if (data.success && Array.isArray(data.data)) {
+                let fetchedResults = data.data;
+
+                // ✅ Backup client-side filtering (in case backend ignores search)
+                if (searchQuery) {
+                    const lowerQuery = searchQuery.toLowerCase();
+
+                    fetchedResults = fetchedResults.filter(item =>
+                        (item.CustomerName || item.BusinessName || item.name || "")
+                            .toLowerCase()
+                            .includes(lowerQuery) ||
+                        (item.Mobile || item.CompanyMobile || "")
+                            .toLowerCase()
+                            .includes(lowerQuery) ||
+                        (item.GSTNumber || "")
+                            .toLowerCase()
+                            .includes(lowerQuery)
+                    );
+                }
+
+                setResults(fetchedResults);
+            } else {
+                setResults([]);
             }
+
         } catch (err) {
             console.error(`Error fetching ${type}s:`, err);
+            setResults([]);
         } finally {
             setIsLoading(false);
         }
     }, [type, apiUrl]);
 
+
     useEffect(() => {
-        fetchEntities("");
-    }, [fetchEntities]);
+        const delayDebounce = setTimeout(() => {
+            fetchEntities(query);
+        }, 300);
+
+        return () => clearTimeout(delayDebounce);
+    }, [query, fetchEntities]);
 
     useEffect(() => {
         clearTimeout(searchTimeout.current);
@@ -153,6 +184,7 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
             state: "",
             district: "",
             pincode: "",
+            preferredLanguage: "", // ✅ added
             isPrimary: true,
             isExisting: false,
             existingCompanyId: null
@@ -187,6 +219,7 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                 state: "",
                 district: "",
                 pincode: "",
+                preferredLanguage: "", // ✅ added
                 isPrimary: false,
                 isExisting: false,
                 existingCompanyId: null
@@ -216,15 +249,16 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
 
         try {
             const response = await DealsApi.getCompanyDetails(companyId);
+
             if (response.success && response.data) {
                 const fullData = response.data;
+
                 setCompanies(prev => {
                     const updated = [...prev];
-                    const emptyIdx = updated.findIndex(c => !c.name && !c.isExisting);
-                    const targetIdx = emptyIdx === -1 ? updated.length : emptyIdx;
 
-                    updated[targetIdx] = {
-                        id: Date.now() + Math.random(),
+                    // ✅ Always use the first company form (same form)
+                    updated[0] = {
+                        ...updated[0],
                         name: fullData.BusinessName || fullData.CompanyName || fullData.name || "",
                         pan: fullData.CompanyPAN || fullData.pan || "",
                         gst: fullData.GSTNumber || fullData.gst || "",
@@ -239,10 +273,11 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                         state: fullData.State || "",
                         district: fullData.District || "",
                         pincode: fullData.PinCode || fullData.pincode || "",
-                        isPrimary: updated.length === 1 ? true : false,
+                        preferredLanguage: fullData.PreferredLanguage || "",
                         isExisting: true,
                         existingCompanyId: companyId
                     };
+
                     return updated;
                 });
             }
@@ -250,11 +285,74 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
             console.error("Error fetching company details:", err);
             toast.error("Failed to fetch full company details");
         }
+
         setShowCompanySearch(false);
     };
 
+
+
+    const handleNewCompanyEntry = () => {
+        setShowCompanySearch(false);
+
+        setCompanies(prev => [
+            ...prev,
+            {
+                id: Date.now() + Math.random(),
+                name: "",
+                pan: "",
+                gst: "",
+                cin: "",
+                email: "",
+                mobile: "",
+                constitutionCategory: "",
+                sector: "",
+                businessNature: "",
+                website: "",
+                country: "India",
+                state: "",
+                district: "",
+                pincode: "",
+                preferredLanguage: "",
+                isPrimary: prev.length === 0,
+                isExisting: false,
+                existingCompanyId: null
+            }
+        ]);
+    };
+
+
+
+    const handleClearCompanyForm = () => {
+        setCompanies(prev => {
+            const updated = [...prev];
+
+            updated[0] = {
+                ...updated[0],
+                name: "",
+                pan: "",
+                gst: "",
+                cin: "",
+                email: "",
+                mobile: "",
+                constitutionCategory: "",
+                sector: "",
+                businessNature: "",
+                website: "",
+                country: "India",
+                state: "",
+                district: "",
+                pincode: "",
+                preferredLanguage: "",
+                isExisting: false,
+                existingCompanyId: null
+            };
+
+            return updated;
+        });
+    };
+
     const handleSubmit = async () => {
-        if (!customerData.firstName || !customerData.mobile) {
+        if (!customerData.customerName || !customerData.mobile) {
             toast.error("Please fill required customer fields");
             setActiveTab("customer");
             return;
@@ -353,131 +451,146 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                                 exit={{ opacity: 0, x: 20 }}
                                 className="space-y-6"
                             >
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2 col-span-full">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Customer Name *</label>
-                                        <div className="relative group">
-                                            <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                                            <input
-                                                type="text"
-                                                name="customerName"
-                                                value={customerData.customerName}
-                                                onChange={handleCustomerChange}
-                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-sm font-medium"
-                                                placeholder="Enter full name"
-                                            />
-                                        </div>
-                                    </div>
 
+                                {/* Customer Name */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-600">
+                                        Customer Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="customerName"
+                                        value={customerData.customerName}
+                                        onChange={handleCustomerChange}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                        placeholder="Enter customer name"
+                                    />
+                                </div>
+
+                                {/* Mobile */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-600">
+                                        Mobile
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="mobile"
+                                        value={customerData.mobile}
+                                        onChange={handleCustomerChange}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                        placeholder="Enter mobile number"
+                                    />
+                                </div>
+
+                                {/* Email */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-600">
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={customerData.email}
+                                        onChange={handleCustomerChange}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                        placeholder="Enter email address"
+                                    />
+                                </div>
+
+                                {/* Country + Pincode */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Mobile Number *</label>
-                                        <div className="relative group">
-                                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                                            <input
-                                                type="text"
-                                                name="mobile"
-                                                value={customerData.mobile}
-                                                onChange={handleCustomerChange}
-                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-sm font-medium"
-                                                placeholder="10-digit mobile number"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
-                                        <div className="relative group">
-                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                                            <input
-                                                type="email"
-                                                name="email"
-                                                value={customerData.email}
-                                                onChange={handleCustomerChange}
-                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-sm font-medium"
-                                                placeholder="email@example.com"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">PAN Number</label>
+                                        <label className="text-sm font-medium text-gray-600">
+                                            Country
+                                        </label>
                                         <input
                                             type="text"
-                                            name="pan"
-                                            value={customerData.pan}
-                                            onChange={handleCustomerChange}
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-sm font-medium"
-                                            placeholder="ABCDE1234F"
+                                            name="country"
+                                            value={customerData.country}
+                                            disabled
+                                            className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl outline-none text-sm"
                                         />
                                     </div>
+
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Preferred Language</label>
-                                        <select
-                                            name="preferredLanguage"
-                                            value={customerData.preferredLanguage}
-                                            onChange={handleCustomerChange}
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-sm font-medium appearance-none"
-                                        >
-                                            <option value="">Select Language</option>
-                                            <option value="English">English</option>
-                                            <option value="Hindi">Hindi</option>
-                                            <option value="Malayalam">Malayalam</option>
-                                            <option value="Tamil">Tamil</option>
-                                            <option value="Kannada">Kannada</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Closure Date</label>
+                                        <label className="text-sm font-medium text-gray-600">
+                                            Pincode
+                                        </label>
                                         <input
-                                            type="date"
-                                            name="closureDate"
-                                            value={customerData.closureDate}
+                                            type="text"
+                                            name="pincode"
+                                            value={customerData.pincode}
                                             onChange={handleCustomerChange}
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-sm font-medium"
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                            placeholder="Enter pincode"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Location Information</h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase">State</label>
-                                            <select
-                                                name="state"
-                                                value={customerData.state}
-                                                onChange={handleCustomerChange}
-                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
-                                            >
-                                                <option value="">Select State</option>
-                                                {locationData.states.map(s => <option key={s.stateName} value={s.stateName}>{s.stateName}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase">District</label>
-                                            <select
-                                                name="district"
-                                                value={customerData.district}
-                                                onChange={handleCustomerChange}
-                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
-                                            >
-                                                <option value="">Select District</option>
-                                                {customerData.state && locationData.states.find(s => s.stateName === customerData.state)?.districts.map(d => (
-                                                    <option key={d.districtName} value={d.districtName}>{d.districtName}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase">Pincode</label>
-                                            <input
-                                                type="text"
-                                                name="pincode"
-                                                value={customerData.pincode}
-                                                onChange={handleCustomerChange}
-                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
-                                                placeholder="6 digits"
-                                            />
-                                        </div>
+                                {/* State + District */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-600">
+                                            State
+                                        </label>
+                                        <select
+                                            name="state"
+                                            value={customerData.state}
+                                            onChange={handleCustomerChange}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                        >
+                                            <option value="">Search or select state</option>
+                                            {locationData.states.map(s => (
+                                                <option key={s.stateName} value={s.stateName}>
+                                                    {s.stateName}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-600">
+                                            District
+                                        </label>
+                                        <select
+                                            name="district"
+                                            value={customerData.district}
+                                            onChange={handleCustomerChange}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                        >
+                                            <option value="">Search or select district</option>
+                                            {customerData.state &&
+                                                locationData.states
+                                                    .find(s => s.stateName === customerData.state)
+                                                    ?.districts.map(d => (
+                                                        <option key={d.districtName} value={d.districtName}>
+                                                            {d.districtName}
+                                                        </option>
+                                                    ))}
+                                        </select>
                                     </div>
                                 </div>
+
+                                {/* Preferred Language */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-600">
+                                        Preferred Language
+                                    </label>
+                                    <select
+                                        name="preferredLanguage"
+                                        value={customerData.preferredLanguage}
+                                        onChange={handleCustomerChange}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                    >
+                                        <option value="">Select Language</option>
+                                        <option value="English">English</option>
+                                        <option value="Hindi">Hindi</option>
+                                        <option value="Malayalam">Malayalam</option>
+                                        <option value="Tamil">Tamil</option>
+                                        <option value="Kannada">Kannada</option>
+                                    </select>
+                                </div>
+
                             </motion.div>
                         ) : (
                             <motion.div
@@ -491,11 +604,20 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                                     <h4 className="text-sm font-bold text-gray-700">Company (Primary & Others)</h4>
                                     <div className="relative">
                                         <button
-                                            onClick={() => setShowCompanySearch(!showCompanySearch)}
-                                            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors"
+                                            onClick={() => {
+                                                if (companies[0]?.isExisting) {
+                                                    handleClearCompanyForm();
+                                                } else {
+                                                    setShowCompanySearch(!showCompanySearch);
+                                                }
+                                            }}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${companies[0]?.isExisting
+                                                ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                                                : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                                                }`}
                                         >
                                             <Search className="w-4 h-4" />
-                                            If Existing
+                                            {companies[0]?.isExisting ? "New Entry" : "If Existing"}
                                         </button>
                                         <AnimatePresence>
                                             {showCompanySearch && (
@@ -545,8 +667,12 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Business Name</label>
+
+                                            {/* Company Name */}
+                                            <div className="space-y-2 col-span-full">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                                                    Company Name
+                                                </label>
                                                 <div className="relative group">
                                                     <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                                     <input
@@ -554,35 +680,32 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                                                         value={company.name}
                                                         onChange={(e) => handleCompanyChange(company.id, "name", e.target.value)}
                                                         disabled={company.isExisting}
-                                                        className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-medium"
-                                                        placeholder="Business legal name"
+                                                        className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none text-sm font-medium"
+                                                        placeholder="Enter company name"
                                                     />
                                                 </div>
                                             </div>
+
+                                            {/* Company GST */}
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">GST Number</label>
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                                                    Company GST
+                                                </label>
                                                 <input
                                                     type="text"
                                                     value={company.gst}
                                                     onChange={(e) => handleCompanyChange(company.id, "gst", e.target.value)}
                                                     disabled={company.isExisting}
-                                                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-medium"
-                                                    placeholder="15-digit GSTIN"
+                                                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none text-sm font-medium"
+                                                    placeholder="Enter GST number"
                                                 />
                                             </div>
+
+                                            {/* Company Mobile */}
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">PAN</label>
-                                                <input
-                                                    type="text"
-                                                    value={company.pan}
-                                                    onChange={(e) => handleCompanyChange(company.id, "pan", e.target.value)}
-                                                    disabled={company.isExisting}
-                                                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-medium"
-                                                    placeholder="Company PAN"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Company Contact</label>
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                                                    Company Mobile
+                                                </label>
                                                 <div className="relative group">
                                                     <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                                     <input
@@ -591,74 +714,121 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                                                         onChange={(e) => handleCompanyChange(company.id, "mobile", e.target.value)}
                                                         disabled={company.isExisting}
                                                         className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none text-sm font-medium"
-                                                        placeholder="Company mobile"
+                                                        placeholder="Enter mobile number"
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="space-y-2 col-span-full">
-                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">State</label>
-                                                        <select
-                                                            value={company.state}
-                                                            onChange={(e) => handleCompanyChange(company.id, "state", e.target.value)}
-                                                            disabled={company.isExisting}
-                                                            className="w-full px-3 py-2 bg-white border border-gray-100 rounded-xl text-xs outline-none"
-                                                        >
-                                                            <option value="">Select</option>
-                                                            {locationData.states.map(s => <option key={s.stateName} value={s.stateName}>{s.stateName}</option>)}
-                                                        </select>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">District</label>
-                                                        <select
-                                                            value={company.district}
-                                                            onChange={(e) => handleCompanyChange(company.id, "district", e.target.value)}
-                                                            disabled={company.isExisting}
-                                                            className="w-full px-3 py-2 bg-white border border-gray-100 rounded-xl text-xs outline-none"
-                                                        >
-                                                            <option value="">Select</option>
-                                                            {company.state && locationData.states.find(s => s.stateName === company.state)?.districts.map(d => (
-                                                                <option key={d.districtName} value={d.districtName}>{d.districtName}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">CIN</label>
-                                                        <input
-                                                            type="text"
-                                                            value={company.cin}
-                                                            onChange={(e) => handleCompanyChange(company.id, "cin", e.target.value)}
-                                                            disabled={company.isExisting}
-                                                            className="w-full px-3 py-2 bg-white border border-gray-100 rounded-xl text-xs outline-none"
-                                                            placeholder="CIN Number"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Constitution</label>
-                                                        <select
-                                                            value={company.constitutionCategory}
-                                                            onChange={(e) => handleCompanyChange(company.id, "constitutionCategory", e.target.value)}
-                                                            disabled={company.isExisting}
-                                                            className="w-full px-3 py-2 bg-white border border-gray-100 rounded-xl text-xs outline-none"
-                                                        >
-                                                            <option value="">Select</option>
-                                                            <option value="Proprietorship">Proprietorship</option>
-                                                            <option value="Partnership">Partnership</option>
-                                                            <option value="LLP">LLP</option>
-                                                            <option value="Private Limited">Private Limited</option>
-                                                            <option value="Other">Other</option>
-                                                        </select>
-                                                    </div>
+
+                                            {/* Company Email */}
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                                                    Company Email
+                                                </label>
+                                                <div className="relative group">
+                                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <input
+                                                        type="email"
+                                                        value={company.email}
+                                                        onChange={(e) => handleCompanyChange(company.id, "email", e.target.value)}
+                                                        disabled={company.isExisting}
+                                                        className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none text-sm font-medium"
+                                                        placeholder="Enter email address"
+                                                    />
                                                 </div>
                                             </div>
+
+                                            {/* Company Country */}
+                                            <div className="space-y-2 col-span-full">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                                                    Company Country
+                                                </label>
+                                                <div className="relative group">
+                                                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <input
+                                                        type="text"
+                                                        value={company.country}
+                                                        disabled
+                                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none text-sm font-medium"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* State */}
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
+                                                    State
+                                                </label>
+                                                <select
+                                                    value={company.state}
+                                                    onChange={(e) => handleCompanyChange(company.id, "state", e.target.value)}
+                                                    disabled={company.isExisting}
+                                                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none text-sm"
+                                                >
+                                                    <option value="">Search or select state</option>
+                                                    {locationData.states.map(s => (
+                                                        <option key={s.stateName} value={s.stateName}>
+                                                            {s.stateName}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {/* District */}
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
+                                                    District
+                                                </label>
+                                                <select
+                                                    value={company.district}
+                                                    onChange={(e) => handleCompanyChange(company.id, "district", e.target.value)}
+                                                    disabled={company.isExisting}
+                                                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none text-sm"
+                                                >
+                                                    <option value="">Search or select district</option>
+                                                    {company.state &&
+                                                        locationData.states
+                                                            .find(s => s.stateName === company.state)
+                                                            ?.districts.map(d => (
+                                                                <option key={d.districtName} value={d.districtName}>
+                                                                    {d.districtName}
+                                                                </option>
+                                                            ))}
+                                                </select>
+                                            </div>
+
+                                            {/* Company Preferred Language */}
+                                            <div className="space-y-2 col-span-full">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                                                    Company Preferred Language
+                                                </label>
+                                                <select
+                                                    value={company.preferredLanguage}
+                                                    onChange={(e) => handleCompanyChange(company.id, "preferredLanguage", e.target.value)}
+                                                    disabled={company.isExisting}
+                                                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none text-sm font-medium"
+                                                >
+                                                    <option value="">Select Language</option>
+                                                    <option value="English">English</option>
+                                                    <option value="Hindi">Hindi</option>
+                                                    <option value="Malayalam">Malayalam</option>
+                                                    <option value="Tamil">Tamil</option>
+                                                    <option value="Kannada">Kannada</option>
+                                                </select>
+                                            </div>
+
                                         </div>
                                     </motion.div>
                                 ))}
 
                                 <button
                                     onClick={addCompany}
-                                    className="w-full py-6 border-2 border-dashed border-gray-200 rounded-3xl text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/10 transition-all flex flex-col items-center gap-2 group"
+                                    disabled={companies.some(c => c.isExisting)}
+                                    className={`w-full py-6 border-2 border-dashed rounded-3xl transition-all flex flex-col items-center gap-2 group
+        ${companies.some(c => c.isExisting)
+                                            ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
+                                            : "border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/10"
+                                        }
+    `}
                                 >
                                     <div className="p-3 bg-gray-50 text-gray-400 group-hover:bg-indigo-600 group-hover:text-white rounded-2xl transition-all">
                                         <Plus className="w-6 h-6" />
