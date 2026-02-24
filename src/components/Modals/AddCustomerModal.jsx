@@ -376,7 +376,10 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                 },
                 companies: companies.map(c => ({
                     ...c,
-                    city: c.district // Map district back to city for backend
+                    city: c.district, // keep existing mapping
+
+                    // ✅ ADD THIS
+                    PrimaryCompany: c.isPrimary ? 1 : 0
                 })),
                 franchiseeId: user.FranchiseeID || 1,
                 AssociateID: user.id
