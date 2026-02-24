@@ -380,6 +380,7 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
 
                     // ✅ ADD THIS
                     PrimaryCompany: c.isPrimary ? 1 : 0
+
                 })),
                 franchiseeId: user.FranchiseeID || 1,
                 AssociateID: user.id

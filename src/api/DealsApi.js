@@ -128,14 +128,36 @@ export const deleteDeal = async (id) => {
     }
 };
 
+export const saveAssociateCompany = async (payload) => {
+    try {
+        const response = await axiosInstance.post("/company/create-associate", payload);
+        return response.data;
+    } catch (error) {
+        console.error("Error saving associate company:", error);
+        throw error;
+    }
+};
+
+export const getCustomerDetails = async (customerId) => {
+    try {
+        const response = await axiosInstance.post("/customer/get", { CustomerID: customerId });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching customer details:", error);
+        throw error;
+    }
+};
+
 export default {
     convertToDeal,
     listDeals,
     listAssociateCustomers,
     listAssociateCompanies,
     saveAssociateCustomer,
+    saveAssociateCompany,
     getDealById,
     getCompanyDetails,
+    getCustomerDetails,
     requestQuote,
     updateDeal,
     deleteDeal,

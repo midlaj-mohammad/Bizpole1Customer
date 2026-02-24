@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MoreVertical, Search, Filter, ArrowLeft, ArrowRight } from 'lucide-react';
+import { MoreVertical, Search, Filter, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as DealsApi from '../../api/DealsApi';
 import { getSecureItem } from '../../utils/secureStorage';
 import { format } from 'date-fns';
+import AddCompanyModal from '../../components/Modals/AddCompanyModal';
 
 const AssociateCompanies = () => {
     const navigate = useNavigate();
@@ -14,6 +15,7 @@ const AssociateCompanies = () => {
     const [total, setTotal] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const fetchCompanies = async () => {
         setLoading(true);
@@ -58,12 +60,20 @@ const AssociateCompanies = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-2 bg-[#4b49ac] text-white rounded-lg font-semibold hover:bg-[#3f3da0] shadow-md shadow-[#4b49ac]/20 transition-all active:scale-95"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Company
+                    </button>
                 </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
+                        {/* ... table content remains same ... */}
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-100">
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">S.No</th>
@@ -189,6 +199,12 @@ const AssociateCompanies = () => {
                     </div>
                 </div>
             </div>
+
+            <AddCompanyModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSuccess={fetchCompanies}
+            />
         </div>
     );
 };
