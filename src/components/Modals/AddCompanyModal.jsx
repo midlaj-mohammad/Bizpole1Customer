@@ -141,7 +141,7 @@ const ExistingEntityDropdown = ({ type, onSelect, onClose, apiUrl }) => {
     );
 };
 
-const AddCompanyModal = ({ isOpen, onClose, onSuccess }) => {
+const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     const [activeTab, setActiveTab] = useState("company");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCustomerSearch, setShowCustomerSearch] = useState(false);
@@ -174,6 +174,67 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess }) => {
             existingCustomerId: null
         }
     ]);
+
+    useEffect(() => {
+        if (isOpen && initialData) {
+            setCompanyData({
+                CompanyID: initialData.CompanyID,
+                name: initialData.BusinessName || "",
+                gst: initialData.GSTNumber || "",
+                email: initialData.CompanyEmail || "",
+                mobile: initialData.CompanyMobile || "",
+                country: initialData.Country || "India",
+                state: initialData.State || "",
+                district: initialData.District || initialData.City || "",
+                preferredLanguage: initialData.PreferredLanguage || ""
+            });
+
+            if (initialData.Customers && initialData.Customers.length > 0) {
+                setCustomers(initialData.Customers.map(c => ({
+                    id: c.CustomerID || Date.now() + Math.random(),
+                    CustomerID: c.CustomerID,
+                    name: `${c.FirstName || ""} ${c.LastName || ""}`.trim() || c.CustomerName || "",
+                    mobile: c.Mobile || "",
+                    email: c.Email || "",
+                    country: c.Country || "India",
+                    state: c.State || "",
+                    district: c.District || c.City || "",
+                    pincode: c.PinCode || "",
+                    preferredLanguage: c.PreferredLanguage || "",
+                    isPrimary: !!c.PrimaryCustomer,
+                    isExisting: false,
+                    existingCustomerId: null
+                })));
+            }
+        } else if (isOpen && !initialData) {
+            setCompanyData({
+                name: "",
+                gst: "",
+                email: "",
+                mobile: "",
+                country: "India",
+                state: "",
+                district: "",
+                preferredLanguage: ""
+            });
+            setCustomers([
+                {
+                    id: Date.now(),
+                    name: "",
+                    mobile: "",
+                    email: "",
+                    country: "India",
+                    state: "",
+                    district: "",
+                    pincode: "",
+                    preferredLanguage: "",
+                    isPrimary: true,
+                    isExisting: false,
+                    existingCustomerId: null
+                }
+            ]);
+        }
+    }, [isOpen, initialData]);
 
     const handleCompanyChange = (e) => {
         const { name, value } = e.target;
@@ -301,11 +362,11 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess }) => {
 
             const result = await DealsApi.saveAssociateCompany(payload);
             if (result.success) {
-                toast.success("Company added successfully");
+                toast.success(companyData.CompanyID ? "Company updated successfully" : "Company added successfully");
                 onSuccess();
                 onClose();
             } else {
-                toast.error(result.message || "Failed to add company");
+                toast.error(result.message || (companyData.CompanyID ? "Failed to update company" : "Failed to add company"));
             }
         } catch (err) {
             toast.error("Error connecting to server");
@@ -327,8 +388,10 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess }) => {
                 {/* Header */}
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-indigo-600 to-indigo-700 text-white">
                     <div>
-                        <h2 className="text-xl font-bold">Add New Company</h2>
-                        <p className="text-indigo-100 text-sm mt-1">Create a new company profile and link customers</p>
+                        <h2 className="text-xl font-bold">{companyData.CompanyID ? "Edit Company" : "Add New Company"}</h2>
+                        <p className="text-indigo-100 text-sm mt-1">
+                            {companyData.CompanyID ? "Update company profile and link customers" : "Create a new company profile and link customers"}
+                        </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                         <X className="w-6 h-6" />
@@ -725,7 +788,7 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess }) => {
                                 className="px-10 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center gap-2"
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                Save Company
+                                {companyData.CompanyID ? "Update Company" : "Save Company"}
                             </button>
                         )}
                     </div>

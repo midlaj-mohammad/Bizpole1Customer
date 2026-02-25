@@ -146,7 +146,7 @@ const ExistingEntityDropdown = ({ type, onSelect, onClose, apiUrl }) => {
     );
 };
 
-const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
+const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     const [activeTab, setActiveTab] = useState("customer");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCompanySearch, setShowCompanySearch] = useState(false);
@@ -190,6 +190,88 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
             existingCompanyId: null
         }
     ]);
+
+    useEffect(() => {
+        if (isOpen && initialData) {
+            setCustomerData({
+                CustomerID: initialData.CustomerID,
+                customerName: initialData.FirstName || "",
+                mobile: initialData.Mobile || "",
+                email: initialData.Email || "",
+                pan: initialData.PANNumber || "",
+                country: initialData.Country || "India",
+                state: initialData.State || "",
+                district: initialData.District || "",
+                pincode: initialData.PinCode || "",
+                preferredLanguage: initialData.PreferredLanguage || "",
+                communication: !!initialData.communication,
+                isCompanyRegistered: !!initialData.IsComponyRegistered
+            });
+
+            if (initialData.Companies && initialData.Companies.length > 0) {
+                setCompanies(initialData.Companies.map(c => ({
+                    id: c.CompanyID || Date.now() + Math.random(),
+                    CompanyID: c.CompanyID,
+                    name: c.BusinessName || "",
+                    pan: c.CompanyPAN || "",
+                    gst: c.GSTNumber || "",
+                    cin: c.CIN || "",
+                    email: c.CompanyEmail || "",
+                    mobile: c.CompanyMobile || "",
+                    constitutionCategory: c.ConstitutionCategory || "",
+                    sector: c.Sector || "",
+                    businessNature: c.BusinessNature || "",
+                    website: c.Website || "",
+                    country: c.Country || "India",
+                    state: c.State || "",
+                    district: c.District || "",
+                    pincode: c.PinCode || "",
+                    preferredLanguage: c.PreferredLanguage || "",
+                    isPrimary: !!c.PrimaryCompany,
+                    isExisting: false,
+                    existingCompanyId: null
+                })));
+            }
+        } else if (isOpen && !initialData) {
+            setCustomerData({
+                customerName: "",
+                mobile: "",
+                email: "",
+                pan: "",
+                country: "India",
+                state: "",
+                district: "",
+                pincode: "",
+                preferredLanguage: "",
+                closureDate: "",
+                communication: false,
+                isCompanyRegistered: false
+            });
+            setCompanies([
+                {
+                    id: Date.now(),
+                    name: "",
+                    pan: "",
+                    gst: "",
+                    cin: "",
+                    email: "",
+                    mobile: "",
+                    constitutionCategory: "",
+                    sector: "",
+                    businessNature: "",
+                    website: "",
+                    country: "India",
+                    state: "",
+                    district: "",
+                    pincode: "",
+                    preferredLanguage: "",
+                    isPrimary: true,
+                    isExisting: false,
+                    existingCompanyId: null
+                }
+            ]);
+        }
+    }, [isOpen, initialData]);
 
     const handleCustomerChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -388,11 +470,11 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
 
             const result = await DealsApi.saveAssociateCustomer(payload);
             if (result.success) {
-                toast.success("Customer added successfully");
+                toast.success(customerData.CustomerID ? "Customer updated successfully" : "Customer added successfully");
                 onSuccess();
                 onClose();
             } else {
-                toast.error(result.message || "Failed to add customer");
+                toast.error(result.message || (customerData.CustomerID ? "Failed to update customer" : "Failed to add customer"));
             }
         } catch (err) {
             toast.error("Error connecting to server");
@@ -414,8 +496,10 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                 {/* Header */}
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-indigo-600 to-indigo-700 text-white">
                     <div>
-                        <h2 className="text-xl font-bold">Add New Customer</h2>
-                        <p className="text-indigo-100 text-sm mt-1">Create a new customer profile and link companies</p>
+                        <h2 className="text-xl font-bold">{customerData.CustomerID ? "Edit Customer" : "Add New Customer"}</h2>
+                        <p className="text-indigo-100 text-sm mt-1">
+                            {customerData.CustomerID ? "Update customer profile and linked companies" : "Create a new customer profile and link companies"}
+                        </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                         <X className="w-6 h-6" />
@@ -877,7 +961,7 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                                 className="px-10 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center gap-2"
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                Save Customer
+                                {customerData.CustomerID ? "Update Customer" : "Save Customer"}
                             </button>
                         )}
                     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MoreVertical, Search, Filter, ArrowLeft, ArrowRight, X } from 'lucide-react';
+import { MoreVertical, Search, Filter, ArrowLeft, ArrowRight, X, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as DealsApi from '../../api/DealsApi';
 import { getSecureItem } from '../../utils/secureStorage';
@@ -18,6 +18,9 @@ const AssociateCustomers = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [openMenuId, setOpenMenuId] = useState(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [customerToEdit, setCustomerToEdit] = useState(null);
+    const [deleteId, setDeleteId] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
 
     const fetchCustomers = async () => {
@@ -64,7 +67,10 @@ const AssociateCustomers = () => {
                         />
                     </div>
                     <button
-                        onClick={() => setIsAddModalOpen(true)}
+                        onClick={() => {
+                            setCustomerToEdit(null);
+                            setIsAddModalOpen(true);
+                        }}
                         className="flex items-center gap-2 px-6 py-2 bg-[#4b49ac] text-white rounded-lg font-semibold hover:bg-[#3f3da0] shadow-md shadow-[#4b49ac]/20 transition-all active:scale-95"
                     >
                         <Plus className="w-4 h-4" />
@@ -171,9 +177,20 @@ const AssociateCustomers = () => {
 
                                                     {/* Edit */}
                                                     <button
-                                                        onClick={() => {
-                                                            navigate(`/associate/customers/edit/${customer.CustomerID}`);
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
                                                             setOpenMenuId(null);
+                                                            try {
+                                                                const result = await DealsApi.getCustomerDetails(customer.CustomerID);
+                                                                if (result.success) {
+                                                                    console.log("customer data", result.data);
+
+                                                                    setCustomerToEdit(result.data);
+                                                                    setIsAddModalOpen(true);
+                                                                }
+                                                            } catch (err) {
+                                                                console.error("Error fetching customer details", err);
+                                                            }
                                                         }}
                                                         className="text-gray-700 hover:scale-110 transition"
                                                     >
@@ -182,8 +199,9 @@ const AssociateCustomers = () => {
 
                                                     {/* Delete */}
                                                     <button
-                                                        onClick={() => {
-                                                            console.log("Delete", customer.CustomerID);
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDeleteId(customer.CustomerID);
                                                             setOpenMenuId(null);
                                                         }}
                                                         className="text-red-500 hover:scale-110 transition"
@@ -262,9 +280,66 @@ const AssociateCustomers = () => {
 
             <AddCustomerModal
                 isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
+                onClose={() => {
+                    setIsAddModalOpen(false);
+                    setCustomerToEdit(null);
+                }}
+                initialData={customerToEdit}
                 onSuccess={fetchCustomers}
             />
+
+            {/* Delete Confirmation Modal */}
+            {deleteId && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 overflow-hidden transform transition-all">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="p-3 bg-red-100 text-red-600 rounded-full">
+                                <Trash2 className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">Delete Customer</h3>
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                            Are you sure you want to delete this customer? This action will set the customer as inactive.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setDeleteId(null)}
+                                className="px-5 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    setIsDeleting(true);
+                                    try {
+                                        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/customer/delete`, {
+                                            method: "POST",
+                                            headers: {
+                                                "Content-Type": "application/json",
+                                                Authorization: `Bearer ${getSecureItem("partnerToken")}`
+                                            },
+                                            body: JSON.stringify({ CustomerID: deleteId })
+                                        });
+                                        const result = await response.json();
+                                        if (result.success) {
+                                            fetchCustomers();
+                                            setDeleteId(null);
+                                        }
+                                    } catch (err) {
+                                        console.error("Error deleting customer", err);
+                                    } finally {
+                                        setIsDeleting(false);
+                                    }
+                                }}
+                                disabled={isDeleting}
+                                className="px-6 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md shadow-red-600/20 transition-all flex items-center gap-2"
+                            >
+                                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
