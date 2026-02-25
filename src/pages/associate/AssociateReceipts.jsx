@@ -36,6 +36,9 @@ const AssociateReceipts = () => {
                 search: searchTerm,
             });
 
+            console.log("responseLL", response);
+
+
             if (response.success) {
                 setReceipts(response.data);
                 setTotalReceipts(response.total);
@@ -333,8 +336,8 @@ const AssociateReceipts = () => {
                                         <td className="px-4 py-4 text-center">
                                             <span
                                                 className={`px-2 py-1 rounded text-[10px] font-bold ${(receipt.PaymentStatus || "").toLowerCase() === "success"
-                                                        ? "text-green-600"
-                                                        : "text-orange-600"
+                                                    ? "text-green-600"
+                                                    : "text-orange-600"
                                                     }`}
                                             >
                                                 {receipt.PaymentStatus || "pending"}

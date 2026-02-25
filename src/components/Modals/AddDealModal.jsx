@@ -591,7 +591,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
             try {
                 const selectedState = availableStates.find((s) => s.state_name === formData.serviceState);
                 if (!selectedState) return;
-                const response = await fetch(`${API_BASE_URL}/getPackage?isActive=1&limit=100`, {
+                const response = await fetch(`${API_BASE_URL}/getPackage`, {
                     headers: { Authorization: `Bearer ${getSecureItem("partnerToken")}` },
                 });
                 const data = await response.json();
@@ -1303,11 +1303,11 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                             <div className="relative">
                                                 <div className="flex justify-between items-center mb-1">
                                                     <label className="text-sm font-medium text-gray-700 block">Package Name *</label>
-                                                    <button type="button" onClick={() => { onClose(); navigate('/associate/explore-services'); }}
+                                                    {/* <button type="button" onClick={() => { onClose(); navigate('/associate/explore-services'); }}
                                                         className="text-[#4b49ac] hover:text-[#3f3da0] flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-[#4b49ac]/5 px-2.5 py-1.5 rounded-xl transition-all hover:bg-[#4b49ac]/10 group">
                                                         <Eye className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                                                         Explore Services
-                                                    </button>
+                                                    </button> */}
                                                 </div>
                                                 <select name="selectedPackage" value={formData.selectedPackage || ""} onChange={handleChange}
                                                     disabled={!formData.serviceState}

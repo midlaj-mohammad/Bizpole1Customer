@@ -138,6 +138,8 @@ export const getAssociateDocuments = async (associateId) => {
 export const listAssociateReceipts = async (filters) => {
     try {
         const response = await axiosInstance.post("/associate-receipts", filters);
+        console.log("responseMM", response);
+
         return response.data;
     } catch (error) {
         console.error("Error listing associate receipts:", error);
