@@ -244,11 +244,15 @@ const ServiceDetailsPopup = ({ category, services, onClose }) => {
                                         <p className="text-sm font-semibold text-gray-800 leading-tight">
                                             {service.ServiceName}
                                         </p>
+
                                         {service.Description && (
-                                            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed line-clamp-2">
-                                                {service.Description}
-                                            </p>
+                                            <div className="mt-0.5 max-h-20 overflow-y-auto pr-1">
+                                                <p className="text-xs text-gray-500 leading-relaxed">
+                                                    {service.Description}
+                                                </p>
+                                            </div>
                                         )}
+
                                         {service.ServiceCode && (
                                             <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider bg-[#4b49ac]/8 text-[#4b49ac] px-2 py-0.5 rounded-md">
                                                 {service.ServiceCode}
