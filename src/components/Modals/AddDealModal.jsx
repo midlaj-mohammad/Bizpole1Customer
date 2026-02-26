@@ -491,6 +491,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                         serviceCategory: initialData.serviceCategory || "",
                         serviceState: initialData.serviceState || "",
                         selectedServices: initialData.selectedServices || [],
+                        selectedPackage: initialData.packageId || null,
                     }));
                     setDealType(initialData.serviceType === "package" ? "Package" : "Individual");
                     setStep(1);
