@@ -5,10 +5,11 @@ import {
     Briefcase, Activity, Clock, FileText, IndianRupee,
     AlertCircle, CheckCircle2, MessageSquare, ListChecks,
     FolderOpen, Receipt, FileStack, LayoutDashboard, History,
-    Target, Package, CreditCard, PieChart
+    Target, Package, CreditCard, PieChart, Download, Eye
 } from 'lucide-react';
-import { getServiceDetailById } from '../../api/Services/ServiceDetails';
+import { getServiceDetailById, getServiceDeliverablesByServiceDetailId } from '../../api/Services/ServiceDetails';
 import { format } from 'date-fns';
+import jsPDF from 'jspdf';
 
 const ServiceDetailView = () => {
     const { id } = useParams();
@@ -16,6 +17,43 @@ const ServiceDetailView = () => {
     const [service, setService] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Summary');
+    const [deliverables, setDeliverables] = useState([]);
+    const [deliverablesLoading, setDeliverablesLoading] = useState(false);
+
+    const handleDownloadAsPDF = (url, label) => {
+        if (!url) return;
+
+        // If it's already a PDF, download it directly
+        if (url.toLowerCase().endsWith('.pdf')) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('target', '_blank');
+            link.setAttribute('download', `${label || 'document'}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            // If it's an image, wrap it in a PDF
+            const doc = new jsPDF();
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                canvas.width = this.width;
+                canvas.height = this.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(this, 0, 0);
+                const dataUrl = canvas.toDataURL('image/jpeg');
+
+                const imgWidth = doc.internal.pageSize.getWidth();
+                const imgHeight = (this.height * imgWidth) / this.width;
+
+                doc.addImage(dataUrl, 'JPEG', 0, 0, imgWidth, imgHeight);
+                doc.save(`${label || 'document'}.pdf`);
+            };
+            img.src = url;
+        }
+    };
 
     const mainTabs = [
         { name: 'Summary', icon: LayoutDashboard },
@@ -53,6 +91,25 @@ const ServiceDetailView = () => {
         };
         fetchDetails();
     }, [id]);
+
+    useEffect(() => {
+        const fetchDeliverables = async () => {
+            if (activeTab === 'Deliverables' && id) {
+                setDeliverablesLoading(true);
+                try {
+                    const response = await getServiceDeliverablesByServiceDetailId(id);
+                    if (response.success) {
+                        setDeliverables(response.data || []);
+                    }
+                } catch (error) {
+                    console.error("Error fetching deliverables:", error);
+                } finally {
+                    setDeliverablesLoading(false);
+                }
+            }
+        };
+        fetchDeliverables();
+    }, [activeTab, id]);
 
     if (loading) {
         return (
@@ -188,6 +245,86 @@ const ServiceDetailView = () => {
                                 <PriceItem label="Pending Allocation" value={service.PendingAmount || 0} />
                             </div>
                         </InfoCard>
+                    </div>
+                ) : activeTab === 'Deliverables' ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-500 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30">
+                            <h2 className="text-xl font-bold text-slate-900 mb-2">Deliverables</h2>
+                            <p className="text-xs text-slate-500 font-medium">View and download files delivered for this service</p>
+                        </div>
+
+                        <div className="p-0">
+                            {deliverablesLoading ? (
+                                <div className="py-20 text-center">
+                                    <Loader2 className="w-10 h-10 animate-spin text-[#4b49ac] mx-auto mb-4" />
+                                    <p className="text-slate-500 font-medium tracking-tight">Loading deliverables...</p>
+                                </div>
+                            ) : deliverables.length === 0 ? (
+                                <div className="py-20 text-center text-slate-400">
+                                    <Package className="w-12 h-12 text-slate-100 mx-auto mb-4" />
+                                    <p>No deliverables found for this service.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                                        <thead>
+                                            <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                <th className="px-8 py-4">#</th>
+                                                <th className="px-8 py-4">Label</th>
+                                                <th className="px-8 py-4">Type</th>
+                                                <th className="px-8 py-4">Value</th>
+                                                <th className="px-8 py-4 text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50 text-[12px]">
+                                            {deliverables.map((item, idx) => (
+                                                <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
+                                                    <td className="px-8 py-4 text-slate-400">{idx + 1}</td>
+                                                    <td className="px-8 py-4 font-semibold text-slate-700 capitalize">{item.label || 'N/A'}</td>
+                                                    <td className="px-8 py-4 text-slate-500 italic">{item.type || 'N/A'}</td>
+                                                    <td className="px-8 py-4 text-slate-600">
+                                                        {item.type === 'number' ? <span className="font-bold">{item.value}</span> : '-'}
+                                                    </td>
+                                                    <td className="px-8 py-4 text-center">
+                                                        {item.type !== 'number' && (
+                                                            <div className="flex items-center justify-center gap-3">
+                                                                <button
+                                                                    onClick={() => window.open(item.value, '_blank')}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-bold text-[10px]"
+                                                                    title="View Document"
+                                                                >
+                                                                    <Eye className="w-3.5 h-3.5" />
+                                                                    VIEW
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDownloadAsPDF(item.value, item.label)}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors font-bold text-[10px]"
+                                                                    title="Download as PDF"
+                                                                >
+                                                                    <Download className="w-3.5 h-3.5" />
+                                                                    PDF
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : activeTab === 'Document Collection' ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-500 min-h-[400px] overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30 text-center">
+                            <h2 className="text-xl font-bold text-slate-900 mb-2">Document Collection</h2>
+                            <p className="text-xs text-slate-500 font-medium">Real-time data for document collection is being aggregated.</p>
+                        </div>
+                        <div className="py-20 text-center text-slate-400">
+                            <FileStack className="w-12 h-12 text-slate-100 mx-auto mb-4" />
+                            <p>No documents collected yet.</p>
+                        </div>
                     </div>
                 ) : (
                     <div className="bg-white rounded-2xl border border-slate-200 border-dashed p-16 text-center animate-in fade-in duration-500">

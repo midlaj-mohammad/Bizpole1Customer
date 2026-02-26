@@ -29,3 +29,17 @@ export const getTasksByServiceAssignment = async (params) => {
         throw error;
     }
 };
+/**
+ * Fetch deliverables for a service detail
+ * @param {string|number} id - ServiceDetailID
+ * @returns {Promise<Object>}
+ */
+export const getServiceDeliverablesByServiceDetailId = async (id) => {
+    try {
+        const response = await axiosInstance.post("/getServiceDeliverablesByServiceDetailId", { serviceDetailedId: 1207, permanent: 1 });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching deliverables:", error);
+        throw error;
+    }
+};

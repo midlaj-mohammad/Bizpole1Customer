@@ -635,7 +635,7 @@ function ExploreServices() {
                                 transition: 'all 0.2s'
                             }}
                         >
-                            Service Packages
+                            Packages
                         </button>
                     </div>
 
