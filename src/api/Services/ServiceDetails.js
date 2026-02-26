@@ -36,10 +36,25 @@ export const getTasksByServiceAssignment = async (params) => {
  */
 export const getServiceDeliverablesByServiceDetailId = async (id) => {
     try {
-        const response = await axiosInstance.post("/getServiceDeliverablesByServiceDetailId", { serviceDetailedId: 1207, permanent: 1 });
+        const response = await axiosInstance.post("/getServiceDeliverablesByServiceDetailId", { serviceDetailedId: id, permanent: 1 });
         return response.data;
     } catch (error) {
         console.error("Error fetching deliverables:", error);
+        throw error;
+    }
+};
+
+/**
+ * Fetch tasks for a service detail
+ * @param {Object} params - { serviceDetailsId, employeeId, franchiseId }
+ * @returns {Promise<Object>}
+ */
+export const getServiceTasks = async (params) => {
+    try {
+        const response = await axiosInstance.post("/getServiceTasks", params);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching tasks:", error);
         throw error;
     }
 };
