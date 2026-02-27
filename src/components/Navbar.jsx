@@ -106,7 +106,7 @@ export default function Navbar() {
                   transition={{ duration: 0.4, ease: "easeInOut" }}
                   className="absolute left-1/2 top-0 h-full bg-[#000] -translate-x-1/2"
                 />
-                <span className="relative z-10">Go to Dashboard</span>
+                <span className="relative z-10">Go Dashboard</span>
               </motion.button>
             ) : (
               <>
