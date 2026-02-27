@@ -2,10 +2,10 @@ import axiosInstance from "../axiosInstance";
 import { getSecureItem } from "../../utils/secureStorage";
 
 
- * List orders with filters and pagination
- * @param {Object} filters - { FranchiseeID, EmployeeID, search, isAssociate, AssociateID, ... }
- * @returns {Promise<Object>} - { success, total, data, page, limit }
- */
+//  * List orders with filters and pagination
+//  * @param {Object} filters - { FranchiseeID, EmployeeID, search, isAssociate, AssociateID, ... }
+//  * @returns {Promise<Object>} - { success, total, data, page, limit }
+//  */
 export const listOrders = async (filters) => {
   try {
     const response = await axiosInstance.post("/orderlist", filters);
