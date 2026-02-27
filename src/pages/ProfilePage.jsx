@@ -22,12 +22,12 @@ const ProfilePage = () => {
 
   useEffect(() => {
     const storedUser = getSecureItem("user");
-    console.log(storedUser, "amlstored");
-
-    if (storedUser) {
-      setUser(storedUser);
-      setForm(storedUser);
-    }
+    console.log(storedUser,"amlstored");
+    
+  if (storedUser) {
+  setUser(storedUser);
+  setForm(storedUser);
+}
 
   }, []);
 
@@ -46,42 +46,35 @@ const ProfilePage = () => {
     setMessage({ type: "", text: "" });
   };
 
-  const handleSave = async () => {
-    setLoading(true);
-    setMessage({ type: "", text: "" });
-    try {
-      const payload = { ...form };
-      const isAssociate = user.role === "associate";
-      const AssociateID = isAssociate ? user.id : null;
+ const handleSave = async () => {
+  setLoading(true);
+  setMessage({ type: "", text: "" });
+  try {
+    const payload = { ...form };
 
-      if (isAssociate) {
-        payload.isAssociate = true;
-        payload.AssociateID = AssociateID;
-      }
-
-      if (user.CustomerID) {
-        payload.CustomerID = user.CustomerID;
-      }
-
-      const res = await createCustomer(payload);
-      console.log(res, "Customer update response");
-
-      setUser(payload);
-      setEditMode(false);
-      setMessage({ type: "success", text: "Profile updated successfully!" });
-
-      // Store as JSON string to avoid parsing error
-      setSecureItem("user", payload);
-
-      console.log("User updated in secure storage:", payload);
-
-    } catch (err) {
-      console.error(err, "aml error");
-      setMessage({ type: "error", text: "Failed to update profile." });
-    } finally {
-      setLoading(false);
+    if (user.CustomerID) {
+      payload.CustomerID = user.CustomerID;
     }
-  };
+
+    const res = await createCustomer(payload);
+    console.log(res, "Customer update response");
+
+    setUser(payload);
+    setEditMode(false);
+    setMessage({ type: "success", text: "Profile updated successfully!" });
+
+    // Store as JSON string to avoid parsing error
+ setSecureItem("user", payload);
+
+    console.log("User updated in secure storage:", payload);
+
+  } catch (err) {
+    console.error(err, "aml error");
+    setMessage({ type: "error", text: "Failed to update profile." });
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   return (
@@ -167,8 +160,9 @@ const ProfilePage = () => {
 
       {message.text && (
         <motion.div
-          className={`mt-6 flex items-center gap-2 justify-center text-sm font-medium ${message.type === "success" ? "text-green-600" : "text-red-600"
-            }`}
+          className={`mt-6 flex items-center gap-2 justify-center text-sm font-medium ${
+            message.type === "success" ? "text-green-600" : "text-red-600"
+          }`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
