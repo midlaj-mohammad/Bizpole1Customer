@@ -1,11 +1,11 @@
 import axiosInstance from "../axiosInstance";
 import { getSecureItem } from "../../utils/secureStorage";
 
-/**
- * List orders with filters and pagination
- * @param {Object} filters - { FranchiseeID, EmployeeID, search, isAssociate, AssociateID, ... }
- * @returns {Promise<Object>} - { success, total, data, page, limit }
- */
+
+//  * List orders with filters and pagination
+//  * @param {Object} filters - { FranchiseeID, EmployeeID, search, isAssociate, AssociateID, ... }
+//  * @returns {Promise<Object>} - { success, total, data, page, limit }
+//  */
 export const listOrders = async (filters) => {
   try {
     const response = await axiosInstance.post("/orderlist", filters);
@@ -42,8 +42,6 @@ export const getOrderById = async (orderId) => {
     throw error;
   }
 };
-
-
 // 🔹 Fetch orders for a specific companyId (bypassing storage)
 
 
@@ -73,9 +71,9 @@ export const getCompanyIdFromStorage = () => {
       }
     }
     // Fallback: try from user object
-    let userDataRaw = getSecureItem("user" || "partnerUser");
+    let userDataRaw = getSecureItem("user");
     if (!userDataRaw) {
-      userDataRaw = window.localStorage.getItem("user" || "partnerUser") || window.sessionStorage.getItem("user" || "partnerUser");
+      userDataRaw = window.localStorage.getItem("user") || window.sessionStorage.getItem("user");
     }
     const userData = userDataRaw && typeof userDataRaw === "string" ? JSON.parse(userDataRaw) : userDataRaw;
     if (userData && userData.Companies && userData.Companies.length > 0) {
