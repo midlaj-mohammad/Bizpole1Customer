@@ -33,9 +33,6 @@ export default function Navbar() {
   }, [location.state]);
 
 
-  localStorage.removeItem("user");
-  localStorage.removeItem("token");
-
 
   // Detect scroll
   useEffect(() => {
