@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
 import { getPackagesByServiceType, getAllServiceTypes } from "../api/ServiceType";
 import { upsertQuote } from "../api/Quote";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,11 +9,10 @@ import { Check, Calendar, Sparkles, ArrowRight } from "lucide-react";
 import { setSecureItem, getSecureItem } from "../utils/secureStorage";
 
 const PlansAndPricing = () => {
-  const [activeTab, setActiveTab] = useState("packages"); // "packages" or "services"
+  const [activeTab, setActiveTab] = useState("packages");
+  const navigate = useNavigate();
   const [hoveredCard, setHoveredCard] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
-  const location = useLocation();
-  const navigate = useNavigate();
 
   const [packages, setPackages] = useState([]);
   const [services, setServices] = useState([]);
@@ -20,7 +21,18 @@ const PlansAndPricing = () => {
   const [businessTypes, setBusinessTypes] = useState([]);
   const [selectedTypeId, setSelectedTypeId] = useState(null);
 
-  // Handle package quote creation
+  // 🔹 Load service type from local storage
+  useEffect(() => {
+    const loc = getSecureItem("location");
+    console.log('Loaded location from storage:', loc);
+    if (loc && loc.serviceTypeId) {
+      setSelectedTypeId(loc.serviceTypeId);
+    } else {
+      setSelectedTypeId("");
+    }
+  }, []);
+
+  // 🔹 Handle package quote
   const handlePackageQuote = async (plan) => {
     try {
       const quoteData = {
@@ -31,45 +43,42 @@ const PlansAndPricing = () => {
       };
 
       const data = await upsertQuote(quoteData);
-
       if (data && data.QuoteID) {
-        const user = getSecureItem("user" || "partnerUser");
+        const user = getSecureItem("user");
         if (user) {
           user.QuoteID = data.QuoteID;
           setSecureItem("user", user);
         }
       }
 
-      alert(`Package quote created! QuoteCode: ${data.QuoteCode}`);
-      navigate("/dashboard/bizpoleone");
+      toast.dismiss();
+      toast.success(`Package quote created! QuoteCode: ${data.QuoteCode}`);
     } catch (err) {
       console.error("Error creating package quote:", err);
-      alert("Failed to create package quote.");
+      toast.dismiss();
+      toast.error("Failed to create package quote.");
     }
   };
 
-  // Handle individual service selection
+  // 🔹 Toggle service selection
   const toggleServiceSelection = (service) => {
-    setSelectedServices((prev) => {
-      const exists = prev.find((s) => s.ID === service.ID);
-      if (exists) {
-        return prev.filter((s) => s.ID !== service.ID);
-      } else {
-        return [...prev, service];
-      }
-    });
+    setSelectedServices((prev) =>
+      prev.find((s) => s.ID === service.ID)
+        ? prev.filter((s) => s.ID !== service.ID)
+        : [...prev, service]
+    );
   };
 
-  // Handle individual services quote creation
+  // 🔹 Create quote for services
   const handleServicesQuote = async () => {
     if (selectedServices.length === 0) {
-      alert("Please select at least one service");
+      toast.info("Please select at least one service");
       return;
     }
 
     try {
       const totalAmount = selectedServices.reduce(
-        (sum, service) => sum + (service.Price || service.price || 0),
+        (sum, s) => sum + (s.Price || s.price || 0),
         0
       );
 
@@ -84,109 +93,200 @@ const PlansAndPricing = () => {
       };
 
       const data = await upsertQuote(quoteData);
-
       if (data && data.QuoteID) {
-        const user = getSecureItem("user" || "partnerUser");
+        const user = getSecureItem("user");
         if (user) {
           user.QuoteID = data.QuoteID;
           setSecureItem("user", user);
         }
       }
 
-      alert(`Services quote created! QuoteCode: ${data.QuoteCode}`);
-      navigate("/dashboard/bizpoleone");
+      toast.dismiss();
+      toast.success(`Services quote created! QuoteCode: ${data.QuoteCode}`);
     } catch (err) {
       console.error("Error creating services quote:", err);
-      alert("Failed to create services quote.");
+      toast.dismiss();
+      toast.error("Failed to create services quote.");
     }
   };
 
-  // Fetch business types (service types) if not present
+  // 🔹 Fetch business types
   useEffect(() => {
-    const fetchBusinessTypes = async () => {
+    const fetchTypes = async () => {
       try {
         const types = await getAllServiceTypes();
         setBusinessTypes(Array.isArray(types) ? types : []);
-      } catch (err) {
-        // ignore error, fallback to error in main fetch
+      } catch {
+        setBusinessTypes([]);
       }
     };
-    fetchBusinessTypes();
+    fetchTypes();
   }, []);
 
-  // Fetch packages and services
+  // 🔹 Fetch packages and services - FIXED VERSION
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        let typeId = null;
-        if (selectedTypeId) {
-          typeId = selectedTypeId;
-        } else if (location?.state?.type) {
-          typeId = location.state.type;
-        } else {
-          const loc = getSecureItem("location");
-          if (loc && loc.type) {
-            typeId = loc.type;
-          }
-        }
-
-        if (!typeId) {
+        // Get serviceTypeId from localStorage or use default
+        const loc = getSecureItem("location");
+        let serviceTypeId = loc?.serviceTypeId || loc?.type || 4;
+        
+        console.log('Fetching data for serviceTypeId:', serviceTypeId);
+        
+        if (!serviceTypeId) {
+          console.warn('No serviceTypeId found');
           setPackages([]);
           setServices([]);
           setLoading(false);
           return;
         }
 
-        const data = await getPackagesByServiceType(typeId);
-        if (data && Array.isArray(data)) {
-          setPackages(data);
-          // Extract unique services
-          const allServices = data.reduce((acc, pkg) => {
-            if (pkg.services && Array.isArray(pkg.services)) {
-              pkg.services.forEach((service) => {
-                if (!acc.find((s) => s.ID === service.ID)) {
-                  acc.push(service);
-                }
-              });
-            }
-            return acc;
-          }, []);
-          setServices(allServices);
-        } else {
-          setPackages([]);
-          setServices([]);
+        const data = await getPackagesByServiceType(serviceTypeId);
+        console.log('API Response:', data);
+
+        // Handle different response structures
+        let packagesArr = [];
+        
+        if (Array.isArray(data)) {
+          packagesArr = data;
+        } else if (data && Array.isArray(data.data)) {
+          packagesArr = data.data;
+        } else if (data && data.packages) {
+          packagesArr = data.packages;
+        } else if (data && data.data && Array.isArray(data.data.packages)) {
+          packagesArr = data.data.packages;
         }
+
+        console.log('Processed packages:', packagesArr);
+        setPackages(packagesArr);
+
+        // Extract services from packages
+        const allServices = packagesArr.reduce((acc, pkg) => {
+          if (pkg.services && Array.isArray(pkg.services)) {
+            pkg.services.forEach((service) => {
+              if (!acc.find((s) => s.ID === service.ID)) acc.push(service);
+            });
+          }
+          return acc;
+        }, []);
+        
+        setServices(allServices);
+        console.log('Extracted services:', allServices);
+
       } catch (err) {
-        console.error("Failed to load data:", err);
+        console.error("Error loading data:", err);
         setError("Failed to load pricing information");
+        setPackages([]);
+        setServices([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [location, selectedTypeId]);
 
-  const calculateTotal = () => {
-    return selectedServices.reduce(
-      (sum, service) => sum + (service.Price || service.price || 0),
+    if (selectedTypeId !== null) {
+      fetchData();
+    }
+  }, [selectedTypeId]);
+
+  // 🔹 Calculate total selected services
+  const calculateTotal = () =>
+    selectedServices.reduce(
+      (sum, s) => sum + (s.Price || s.price || 0),
       0
     );
-  };
 
-  // ✅ Tab Navigation Logic
+  // 🔹 Switch between tabs (navigate for services)
   const handleTabClick = (tab) => {
-    setActiveTab(tab);
     if (tab === "services") {
-      navigate("/services"); // 👈 Redirect to services page
+      navigate("/services");
+    } else {
+      setActiveTab(tab);
     }
   };
 
+  // 🔹 Render package cards with better error handling
+  const renderPackageCard = (plan, index) => {
+    // Safely extract values with fallbacks
+    const packageId = plan.PackageID || plan.id || plan.packageId || index;
+    const packageName = plan.PackageName || plan.name || plan.packageName || "Unnamed Package";
+    const price = plan.YearlyFinalAmount || plan.YearlyMRP || plan.price || plan.amount || 0;
+    const description = plan.Description || "No description available";
+    const planServices = plan.services || [];
+
+    return (
+      <motion.div
+        key={packageId}
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.1 }}
+        whileHover={{ scale: 1.03, y: -10 }}
+        className="relative rounded-2xl p-6 bg-white shadow-lg hover:shadow-2xl border-2 border-gray-100 min-h-[450px] hover:border-[#F3C625]"
+      >
+        {index === 1 && (
+          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+            <span className="bg-[#F3C625] text-black px-4 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+              <Sparkles size={12} /> POPULAR
+            </span>
+          </div>
+        )}
+
+        <div className="absolute top-4 right-4">
+          <span className="bg-gray-100 border border-gray-300 rounded-full px-3 py-1 text-xs font-semibold text-gray-700 flex items-center gap-1">
+            <Calendar size={12} /> {plan.BillingPeriod || "Yearly"}
+          </span>
+        </div>
+
+        <div className="mt-6 mb-4">
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">{packageName}</h3>
+          <div className="flex items-baseline gap-1 mb-3">
+            <span className="text-4xl font-bold text-gray-900">
+              ₹{price}
+            </span>
+            <span className="text-gray-500">/year</span>
+          </div>
+          <p className="text-sm text-gray-600 mb-2">
+            {description}
+          </p>
+        </div>
+
+        <div className="border-t border-gray-200 my-4"></div>
+
+        {planServices.length > 0 ? (
+          <ul className="space-y-3">
+            {planServices.slice(0, 5).map((service, idx) => (
+              <li key={service.ID || idx} className="flex items-start gap-2 text-gray-700">
+                <div className="bg-[#F3C625] bg-opacity-20 p-1 rounded mt-0.5">
+                  <Check size={14} className="text-[#F3C625]" />
+                </div>
+                <span className="text-sm">{service.ServiceName || service.name || "Unnamed Service"}</span>
+              </li>
+            ))}
+            {planServices.length > 5 && (
+              <li className="text-sm text-gray-500 pl-6">
+                +{planServices.length - 5} more services
+              </li>
+            )}
+          </ul>
+        ) : (
+          <p className="text-gray-500 text-sm">No services included</p>
+        )}
+
+        <button
+          onClick={() => handlePackageQuote(plan)}
+          className="w-full mt-6 bg-[#F3C625] hover:bg-[#d4ab1f] text-black font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
+        >
+          Get Quote <ArrowRight size={18} />
+        </button>
+      </motion.div>
+    );
+  };
+
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="w-full min-h-[100%] bg-gradient-to-br from-gray-50 to-gray-100">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* Hero Section */}
         <div className="text-center mb-12">
           <motion.h1
             initial={{ opacity: 0, y: -20 }}
@@ -206,29 +306,12 @@ const PlansAndPricing = () => {
           </motion.p>
         </div>
 
-        {/* Business Type Selector if not selected */}
-        {!selectedTypeId && businessTypes.length > 0 && (
-          <div className="mb-10 max-w-xl mx-auto">
-            <label className="block mb-2 text-lg font-semibold text-gray-700">Select Business Type</label>
-            <select
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring focus:ring-yellow-200"
-              value={selectedTypeId || ""}
-              onChange={e => setSelectedTypeId(e.target.value)}
-            >
-              <option value="">-- Choose Business Type --</option>
-              {businessTypes.map(type => (
-                <option key={type.Id} value={type.Id}>{type.Service_Name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Tab Switcher */}
+        {/* Tabs */}
         <div className="flex justify-center mb-12">
           <div className="bg-white rounded-full p-1 shadow-lg inline-flex">
             <button
               onClick={() => handleTabClick("packages")}
-              className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+              className={`px-8 py-3 rounded-full font-semibold transition-all ${
                 activeTab === "packages"
                   ? "bg-[#F3C625] text-black shadow-md"
                   : "text-gray-600 hover:text-gray-900"
@@ -238,7 +321,7 @@ const PlansAndPricing = () => {
             </button>
             <button
               onClick={() => handleTabClick("services")}
-              className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+              className={`px-8 py-3 rounded-full font-semibold transition-all ${
                 activeTab === "services"
                   ? "bg-[#F3C625] text-black shadow-md"
                   : "text-gray-600 hover:text-gray-900"
@@ -249,7 +332,7 @@ const PlansAndPricing = () => {
           </div>
         </div>
 
-        {/* Loading & Error States */}
+        {/* Loading / Error */}
         {loading && (
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#F3C625]"></div>
@@ -260,11 +343,17 @@ const PlansAndPricing = () => {
         {error && (
           <div className="text-center py-20">
             <p className="text-red-500 text-lg">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 bg-[#F3C625] text-black px-6 py-2 rounded-lg font-semibold"
+            >
+              Retry
+            </button>
           </div>
         )}
 
         {/* Packages Content */}
-        {!loading && !error && selectedTypeId && (
+        {!loading && !error && (
           <AnimatePresence mode="wait">
             {activeTab === "packages" && (
               <motion.div
@@ -272,114 +361,14 @@ const PlansAndPricing = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
               >
                 {packages.length === 0 ? (
                   <div className="text-center py-20 text-gray-500">
-                    No packages available
+                    No packages available for your business type.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {packages.map((plan, i) => (
-                      <motion.div
-                        key={plan.id || plan.packageId || i}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          delay: i * 0.1,
-                          type: "spring",
-                          stiffness: 200,
-                        }}
-                        whileHover={{
-                          scale: 1.03,
-                          y: -10,
-                        }}
-                        onHoverStart={() => setHoveredCard(i)}
-                        onHoverEnd={() => setHoveredCard(null)}
-                        className="relative rounded-2xl p-6 bg-white shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-gray-100 hover:border-[#F3C625] flex flex-col"
-                      >
-                        {i === 1 && (
-                          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                            <span className="bg-[#F3C625] text-black px-4 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                              <Sparkles size={12} /> POPULAR
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="absolute top-4 right-4">
-                          <span className="bg-gray-100 border border-gray-300 rounded-full px-3 py-1 text-xs font-semibold text-gray-700 flex items-center gap-1">
-                            <Calendar size={12} /> Yearly
-                          </span>
-                        </div>
-
-                        <div className="mt-6 mb-4">
-                          <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                            {plan.name ||
-                              plan.PackageName ||
-                              plan.packageName}
-                          </h3>
-                          <div className="flex items-baseline gap-1 mb-3">
-                            <span className="text-4xl font-bold text-gray-900">
-                              ₹
-                              {plan.price ||
-                                plan.YearlyMRP ||
-                                plan.amount}
-                            </span>
-                            <span className="text-gray-500">/year</span>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {plan.description || plan.Description}
-                          </p>
-                          <p className="text-sm font-medium text-[#F3C625]">
-                            {plan.audience || plan.Audience}
-                          </p>
-                        </div>
-
-                        <div className="border-t border-gray-200 my-4"></div>
-
-                        <div className="flex-1">
-                          {plan.services &&
-                            Array.isArray(plan.services) && (
-                              <ul className="space-y-3">
-                                {plan.services
-                                  .slice(0, 5)
-                                  .map((service, idx) => (
-                                    <li
-                                      key={service.ID || idx}
-                                      className="flex items-start gap-2 text-gray-700"
-                                    >
-                                      <div className="bg-[#F3C625] bg-opacity-20 p-1 rounded mt-0.5">
-                                        <Check
-                                          size={14}
-                                          className="text-[#F3C625]"
-                                        />
-                                      </div>
-                                      <span className="text-sm">
-                                        {service.ServiceName}
-                                      </span>
-                                    </li>
-                                  ))}
-                                {plan.services.length > 5 && (
-                                  <li className="text-sm text-gray-500 pl-6">
-                                    +{plan.services.length - 5} more services
-                                  </li>
-                                )}
-                              </ul>
-                            )}
-                        </div>
-
-                        <button
-                          onClick={() => handlePackageQuote(plan)}
-                          className="w-full mt-6 bg-[#F3C625] hover:bg-[#d4ab1f] text-black font-semibold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 group"
-                        >
-                          Get Quote
-                          <ArrowRight
-                            size={18}
-                            className="group-hover:translate-x-1 transition-transform"
-                          />
-                        </button>
-                      </motion.div>
-                    ))}
+                    {packages.map((plan, index) => renderPackageCard(plan, index))}
                   </div>
                 )}
               </motion.div>
