@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, ArrowLeft, Send } from "lucide-react";
 
@@ -86,6 +87,7 @@ export default function ChatListInterface() {
   const [newMessage, setNewMessage] = useState("");
   const [chats, setChats] = useState(chatsData);
   const messagesEndRef = useRef(null);
+  const navigate = useNavigate();
 
   const filteredChats = chats.filter(chat =>
     chat.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -136,10 +138,16 @@ export default function ChatListInterface() {
         <div className="w-full max-w-md bg-neutral-900 text-white rounded-3xl overflow-hidden border border-neutral-700">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-4 border-b border-neutral-700">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-lg font-bold">
-              🐉
-            </div>
+            
             <h1 className="text-xl font-semibold">Chats</h1>
+            <button 
+              className="ml-auto p-1 hover:bg-neutral-700 rounded-full transition-colors"
+              onClick={() => navigate("/dashboard/bizpoleone/chat")}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
           </div>
 
           {/* Search Bar */}
