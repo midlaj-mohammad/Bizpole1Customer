@@ -62,10 +62,17 @@ export const getServicePrice = async ({ ServiceId, StateId, StateName }) => {
   }
 };
 
+// ✅ Fetch service packages
+export const getServicePackages = async () => {
+  const res = await axiosInstance.get("/getPackage");
+  return res.data;
+};
+
 export default {
   getServices,
   getServiceCategories,
   getServicesByCategory,
   getServiceById,
   getServicePrice,
+  getServicePackages,
 };

@@ -5,10 +5,12 @@ import {
     Briefcase, Activity, Clock, FileText, IndianRupee,
     AlertCircle, CheckCircle2, MessageSquare, ListChecks,
     FolderOpen, Receipt, FileStack, LayoutDashboard, History,
-    Target, Package, CreditCard, PieChart
+    Target, Package, CreditCard, PieChart, Download, Eye
 } from 'lucide-react';
-import { getServiceDetailById } from '../../api/Services/ServiceDetails';
+import { getServiceDetailById, getServiceDeliverablesByServiceDetailId, getServiceTasks } from '../../api/Services/ServiceDetails';
 import { format } from 'date-fns';
+import { getSecureItem } from '../../utils/secureStorage';
+import jsPDF from 'jspdf';
 
 const ServiceDetailView = () => {
     const { id } = useParams();
@@ -16,10 +18,49 @@ const ServiceDetailView = () => {
     const [service, setService] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Summary');
+    const [deliverables, setDeliverables] = useState([]);
+    const [deliverablesLoading, setDeliverablesLoading] = useState(false);
+    const [tasks, setTasks] = useState([]);
+    const [tasksLoading, setTasksLoading] = useState(false);
+
+    const handleDownloadAsPDF = (url, label) => {
+        if (!url) return;
+
+        // If it's already a PDF, download it directly
+        if (url.toLowerCase().endsWith('.pdf')) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('target', '_blank');
+            link.setAttribute('download', `${label || 'document'}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            // If it's an image, wrap it in a PDF
+            const doc = new jsPDF();
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                canvas.width = this.width;
+                canvas.height = this.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(this, 0, 0);
+                const dataUrl = canvas.toDataURL('image/jpeg');
+
+                const imgWidth = doc.internal.pageSize.getWidth();
+                const imgHeight = (this.height * imgWidth) / this.width;
+
+                doc.addImage(dataUrl, 'JPEG', 0, 0, imgWidth, imgHeight);
+                doc.save(`${label || 'document'}.pdf`);
+            };
+            img.src = url;
+        }
+    };
 
     const mainTabs = [
         { name: 'Summary', icon: LayoutDashboard },
-        // { name: 'Task Progress', icon: ListChecks },
+        { name: 'Task Progress', icon: ListChecks },
         // { name: 'Receipt Allocations', icon: Receipt },
         // { name: 'Notes', icon: FileText },
         // { name: 'Event Logs', icon: History },
@@ -41,8 +82,9 @@ const ServiceDetailView = () => {
             setLoading(true);
             try {
                 const response = await getServiceDetailById(id);
-                if (response.success) {
-                    setService(response.data);
+                console.log("response", response);
+                if (response) {
+                    setService(response);
                 }
             } catch (err) {
                 console.error("fetchDetails error", err);
@@ -52,6 +94,55 @@ const ServiceDetailView = () => {
         };
         fetchDetails();
     }, [id]);
+
+    useEffect(() => {
+        const fetchDeliverables = async () => {
+            if (activeTab === 'Deliverables' && id) {
+                setDeliverablesLoading(true);
+                try {
+                    const response = await getServiceDeliverablesByServiceDetailId(id);
+                    if (response.success) {
+                        setDeliverables(response.data || []);
+                    }
+                } catch (error) {
+                    console.error("Error fetching deliverables:", error);
+                } finally {
+                    setDeliverablesLoading(false);
+                }
+            }
+        };
+        fetchDeliverables();
+    }, [activeTab, id]);
+
+    useEffect(() => {
+        const fetchTasks = async () => {
+            if (activeTab === 'Task Progress' && id) {
+                setTasksLoading(true);
+                try {
+                    const user = getSecureItem("partnerUser") || {};
+                    const response = await getServiceTasks({
+                        // serviceDetailsId: id,
+                        // employeeId: user.EmployeeID,
+                        // franchiseId: user.FranchiseeID
+
+                        franchiseId: 1,
+                        page: 1,
+                        limit: 10,
+                        serviceDetailsId: 1207,
+                        // employeeId: 1,
+                    });
+                    if (response.success) {
+                        setTasks(response.data || []);
+                    }
+                } catch (error) {
+                    console.error("Error fetching tasks:", error);
+                } finally {
+                    setTasksLoading(false);
+                }
+            }
+        };
+        fetchTasks();
+    }, [activeTab, id]);
 
     if (loading) {
         return (
@@ -187,6 +278,177 @@ const ServiceDetailView = () => {
                                 <PriceItem label="Pending Allocation" value={service.PendingAmount || 0} />
                             </div>
                         </InfoCard>
+                    </div>
+                ) : activeTab === 'Task Progress' ? (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* Progress Header */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Task Listing</h2>
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Project Milestones</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                        {tasks.filter(t => (t.status || '').toLowerCase() === 'completed').length} of {tasks.length} tasks completed ({tasks.length > 0 ? Math.round((tasks.filter(t => (t.status || '').toLowerCase() === 'completed').length / tasks.length) * 100) : 0}%)
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Progress Bar */}
+                            <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden mb-2">
+                                <div
+                                    className="h-full bg-amber-400 rounded-full transition-all duration-1000 ease-out"
+                                    style={{ width: `${tasks.length > 0 ? (tasks.filter(t => (t.status || '').toLowerCase() === 'completed').length / tasks.length) * 100 : 0}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Task List */}
+                        <div className="space-y-4">
+                            {tasksLoading ? (
+                                <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-sm">
+                                    <Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto mb-4" />
+                                    <p className="text-slate-500 font-medium">Crunching task data...</p>
+                                </div>
+                            ) : tasks.length === 0 ? (
+                                <div className="bg-white rounded-2xl border border-slate-200 border-dashed p-16 text-center shadow-sm">
+                                    <Activity className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                                    <h3 className="text-lg font-bold text-slate-900 mb-1">No Tasks Found</h3>
+                                    <p className="text-slate-400 text-sm font-medium">There are no tasks assigned to this service yet.</p>
+                                </div>
+                            ) : (
+                                tasks.map((task, idx) => (
+                                    console.log("task", task),
+
+                                    <div key={idx} className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm hover:shadow-md transition-all group border-l-4 border-l-transparent hover:border-l-amber-400">
+                                        <div className="flex flex-col lg:flex-row gap-6 lg:items-center">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <h4 className="text-[15px] font-bold text-slate-800 truncate group-hover:text-amber-600 transition-colors">
+                                                        {task.TaskName}
+                                                    </h4>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Type</p>
+                                                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold ${task.IsInternal ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                            {task.ApprovalType || (task.IsInternal ? 'Internal' : 'External')}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Owner</p>
+                                                        <p className="text-[11px] font-bold text-slate-600 truncate">— ({task.CompanyName || 'N/A'})</p>
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Due Date</p>
+                                                        <p className="text-[11px] font-bold text-slate-600 italic">
+                                                            {task.TimeoutAt && task.TimeoutAt !== '0000-00-00 00:00:00' ? format(new Date(task.TimeoutAt), 'd MMM yyyy') : '—'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</p>
+                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold ${(task.status || '').toLowerCase() === 'completed'
+                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                            : (task.status || '').toLowerCase() === 'active'
+                                                                ? 'bg-blue-100 text-blue-700'
+                                                                : 'bg-slate-100 text-slate-600'
+                                                            }`}>
+                                                            {(task.status || '').toLowerCase() === 'completed' && <CheckCircle2 className="w-3 h-3" />}
+                                                            {task.status || 'Pending'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                ) : activeTab === 'Deliverables' ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-500 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30">
+                            <h2 className="text-xl font-bold text-slate-900 mb-2">Deliverables</h2>
+                            <p className="text-xs text-slate-500 font-medium">View and download files delivered for this service</p>
+                        </div>
+
+                        <div className="p-0">
+                            {deliverablesLoading ? (
+                                <div className="py-20 text-center">
+                                    <Loader2 className="w-10 h-10 animate-spin text-[#4b49ac] mx-auto mb-4" />
+                                    <p className="text-slate-500 font-medium tracking-tight">Loading deliverables...</p>
+                                </div>
+                            ) : deliverables.length === 0 ? (
+                                <div className="py-20 text-center text-slate-400">
+                                    <Package className="w-12 h-12 text-slate-100 mx-auto mb-4" />
+                                    <p>No deliverables found for this service.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                                        <thead>
+                                            <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                <th className="px-8 py-4">#</th>
+                                                <th className="px-8 py-4">Label</th>
+                                                <th className="px-8 py-4">Type</th>
+                                                <th className="px-8 py-4">Value</th>
+                                                <th className="px-8 py-4 text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50 text-[12px]">
+                                            {deliverables.map((item, idx) => (
+                                                <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
+                                                    <td className="px-8 py-4 text-slate-400">{idx + 1}</td>
+                                                    <td className="px-8 py-4 font-semibold text-slate-700 capitalize">{item.label || 'N/A'}</td>
+                                                    <td className="px-8 py-4 text-slate-500 italic">{item.type || 'N/A'}</td>
+                                                    <td className="px-8 py-4 text-slate-600">
+                                                        {item.type === 'number' ? <span className="font-bold">{item.value}</span> : '-'}
+                                                    </td>
+                                                    <td className="px-8 py-4 text-center">
+                                                        {item.type !== 'number' && (
+                                                            <div className="flex items-center justify-center gap-3">
+                                                                <button
+                                                                    onClick={() => window.open(item.value, '_blank')}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-bold text-[10px]"
+                                                                    title="View Document"
+                                                                >
+                                                                    <Eye className="w-3.5 h-3.5" />
+                                                                    VIEW
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDownloadAsPDF(item.value, item.label)}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors font-bold text-[10px]"
+                                                                    title="Download as PDF"
+                                                                >
+                                                                    <Download className="w-3.5 h-3.5" />
+                                                                    PDF
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : activeTab === 'Document Collection' ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm animate-in fade-in duration-500 min-h-[400px] overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30 text-center">
+                            <h2 className="text-xl font-bold text-slate-900 mb-2">Document Collection</h2>
+                            <p className="text-xs text-slate-500 font-medium">Real-time data for document collection is being aggregated.</p>
+                        </div>
+                        <div className="py-20 text-center text-slate-400">
+                            <FileStack className="w-12 h-12 text-slate-100 mx-auto mb-4" />
+                            <p>No documents collected yet.</p>
+                        </div>
                     </div>
                 ) : (
                     <div className="bg-white rounded-2xl border border-slate-200 border-dashed p-16 text-center animate-in fade-in duration-500">

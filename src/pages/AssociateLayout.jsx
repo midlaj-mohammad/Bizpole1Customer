@@ -20,6 +20,9 @@ import {
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { getSecureItem } from '../utils/secureStorage';
 
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 const AssociateLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -68,6 +71,7 @@ const AssociateLayout = () => {
 
     return (
         <div className="flex h-screen bg-[#f8fafc]">
+            <ToastContainer position="top-right" autoClose={3000} />
             {/* Sidebar */}
             <aside className="w-64 bg-[#0f172a] text-white flex flex-col">
                 <div className="p-6 flex items-center gap-3">

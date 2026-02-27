@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MoreVertical, Search, Filter, ArrowLeft, ArrowRight } from 'lucide-react';
+import { MoreVertical, Search, Filter, ArrowLeft, ArrowRight, Plus, Eye, Pencil, Trash2, X, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as DealsApi from '../../api/DealsApi';
 import { getSecureItem } from '../../utils/secureStorage';
 import { format } from 'date-fns';
+import AddCompanyModal from '../../components/Modals/AddCompanyModal';
 
 const AssociateCompanies = () => {
     const navigate = useNavigate();
@@ -14,6 +15,11 @@ const AssociateCompanies = () => {
     const [total, setTotal] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [openMenuId, setOpenMenuId] = useState(null);
+    const [companyToEdit, setCompanyToEdit] = useState(null);
+    const [deleteId, setDeleteId] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchCompanies = async () => {
         setLoading(true);
@@ -58,12 +64,23 @@ const AssociateCompanies = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <button
+                        onClick={() => {
+                            setCompanyToEdit(null);
+                            setIsAddModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-6 py-2 bg-[#4b49ac] text-white rounded-lg font-semibold hover:bg-[#3f3da0] shadow-md shadow-[#4b49ac]/20 transition-all active:scale-95"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Company
+                    </button>
                 </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
+                        {/* ... table content remains same ... */}
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-100">
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">S.No</th>
@@ -130,10 +147,66 @@ const AssociateCompanies = () => {
                                         <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                                             {company.UpdatedAt ? format(new Date(company.UpdatedAt), 'dd/MM/yyyy') : '-'}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-400">
-                                            <button className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+                                        <td className="px-6 py-4 text-sm text-gray-400 relative">
+                                            <button
+                                                onClick={() => setOpenMenuId(openMenuId === company.CompanyID ? null : company.CompanyID)}
+                                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                            >
                                                 <MoreVertical className="w-4 h-4" />
                                             </button>
+
+                                            {openMenuId === company.CompanyID && (
+                                                <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 flex items-center gap-2 px-3 z-50 animate-in fade-in slide-in-from-right-2 duration-200">
+                                                    {/* View */}
+                                                    <button
+                                                        onClick={() => {
+                                                            navigate(`/associate/companies/${company.CompanyID}`);
+                                                            setOpenMenuId(null);
+                                                        }}
+                                                        className="text-gray-700 hover:scale-110 transition"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+
+                                                    {/* Edit */}
+                                                    <button
+                                                        onClick={async () => {
+                                                            setOpenMenuId(null);
+                                                            try {
+                                                                const result = await DealsApi.getCompanyDetails(company.CompanyID);
+                                                                if (result.success) {
+                                                                    setCompanyToEdit(result.data);
+                                                                    setIsAddModalOpen(true);
+                                                                }
+                                                            } catch (err) {
+                                                                console.error("Error fetching company details:", err);
+                                                            }
+                                                        }}
+                                                        className="text-gray-700 hover:scale-110 transition"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+
+                                                    {/* Delete */}
+                                                    <button
+                                                        onClick={() => {
+                                                            setDeleteId(company.CompanyID);
+                                                            setOpenMenuId(null);
+                                                        }}
+                                                        className="text-red-500 hover:scale-110 transition"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+
+                                                    {/* Close */}
+                                                    <button
+                                                        onClick={() => setOpenMenuId(null)}
+                                                        className="text-gray-400 hover:text-black transition"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 ))
@@ -191,6 +264,69 @@ const AssociateCompanies = () => {
                     </div>
                 </div>
             </div>
+
+            <AddCompanyModal
+                isOpen={isAddModalOpen}
+                onClose={() => {
+                    setIsAddModalOpen(false);
+                    setCompanyToEdit(null);
+                }}
+                initialData={companyToEdit}
+                onSuccess={fetchCompanies}
+            />
+
+            {/* Delete Confirmation Modal */}
+            {deleteId && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 overflow-hidden transform transition-all">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="p-3 bg-red-100 text-red-600 rounded-full">
+                                <Trash2 className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">Delete Company</h3>
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                            Are you sure you want to delete this company? This action will set the company as inactive.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setDeleteId(null)}
+                                className="px-5 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    setIsDeleting(true);
+                                    try {
+                                        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/company/soft-delete`, {
+                                            method: "POST",
+                                            headers: {
+                                                "Content-Type": "application/json",
+                                                Authorization: `Bearer ${getSecureItem("partnerToken")}`
+                                            },
+                                            body: JSON.stringify({ CompanyId: deleteId })
+                                        });
+                                        const result = await response.json();
+                                        if (result.success) {
+                                            fetchCompanies();
+                                            setDeleteId(null);
+                                        }
+                                    } catch (err) {
+                                        console.error("Error deleting company", err);
+                                    } finally {
+                                        setIsDeleting(false);
+                                    }
+                                }}
+                                disabled={isDeleting}
+                                className="px-6 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md shadow-red-600/20 transition-all flex items-center gap-2"
+                            >
+                                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
