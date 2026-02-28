@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getServiceCategories, getServices, getServicesByCategory } from '../../api/ServicesApi';
-import { useNavigate } from 'react-router-dom';
+import { getServiceCategories, getServices, getServicesByCategory, getServicePackages } from '../../api/ServicesApi';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Oval } from 'react-loader-spinner';
 
 const INDIAN_STATES = [
@@ -47,9 +47,10 @@ function ServiceModal({ service, onClose }) {
         const queryParams = new URLSearchParams({
             create: "true",
             state: selectedState,
-            category: service.CategoryID,
-            serviceId: service.ServiceID,
-            type: "individual"
+            category: service.CategoryID || "",
+            serviceId: service.ServiceID || "",
+            packageId: service.PackageID || "",
+            type: service.PackageID ? "package" : "individual"
         });
 
         window.location.href = `/associate/deals?${queryParams.toString()}`;
@@ -118,7 +119,7 @@ function ServiceModal({ service, onClose }) {
                         marginBottom: '14px'
                     }}>
                         <span style={{ fontSize: '11px', fontWeight: '600', color: '#0284c7', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                            {service.ServiceCode}
+                            {service.ServiceCode || (service.PackageID ? `PKG-${service.PackageID}` : 'SERVICE')}
                         </span>
                     </div>
 
@@ -127,7 +128,7 @@ function ServiceModal({ service, onClose }) {
                         color: '#0f172a', marginBottom: '10px',
                         letterSpacing: '-0.02em', lineHeight: '1.3'
                     }}>
-                        {service.ServiceName}
+                        {service.ServiceName || service.PackageName}
                     </h2>
 
                     <p style={{
@@ -143,15 +144,15 @@ function ServiceModal({ service, onClose }) {
                     display: 'flex', gap: '12px',
                     marginBottom: '28px', flexWrap: 'wrap'
                 }}>
-                    {service.ServiceID && (
+                    {(service.ServiceID || service.PackageID) && (
                         <div style={{
                             backgroundColor: '#f8fafc',
                             borderRadius: '10px',
                             padding: '10px 16px',
                             flex: 1, minWidth: '120px'
                         }}>
-                            <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Service ID</div>
-                            <div style={{ fontSize: '14px', color: '#334155', fontWeight: '600' }}>{service.ServiceID}</div>
+                            <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>{service.PackageID ? 'Package ID' : 'Service ID'}</div>
+                            <div style={{ fontSize: '14px', color: '#334155', fontWeight: '600' }}>{service.ServiceID || service.PackageID}</div>
                         </div>
                     )}
                     {service.CategoryID && (
@@ -166,6 +167,33 @@ function ServiceModal({ service, onClose }) {
                         </div>
                     )}
                 </div>
+
+                {/* Package Services List */}
+                {service.PackageID && service.services && service.services.length > 0 && (
+                    <div style={{ marginBottom: '28px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                            Included Services
+                        </div>
+                        <div style={{
+                            display: 'flex', flexWrap: 'wrap', gap: '8px',
+                            maxHeight: '120px', overflowY: 'auto', padding: '4px'
+                        }}>
+                            {service.services.map((s, i) => (
+                                <div key={i} style={{
+                                    backgroundColor: '#f1f5f9',
+                                    color: '#475569',
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    fontSize: '12px',
+                                    fontWeight: '500',
+                                    border: '1px solid #e2e8f0'
+                                }}>
+                                    {s.ServiceName}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Divider */}
                 <div style={{ height: '1px', backgroundColor: '#f1f5f9', marginBottom: '28px' }} />
@@ -330,13 +358,17 @@ function ServiceModal({ service, onClose }) {
 }
 
 function ExploreServices() {
+    const [searchParams] = useSearchParams();
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
     const [categories, setCategories] = useState([]);
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
     const [categoriesLoading, setCategoriesLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('services'); // 'services' or 'packages'
+    const [servicePackages, setServicePackages] = useState([]);
+    const [packagesLoading, setPackagesLoading] = useState(false);
 
     const [pagination, setPagination] = useState({
         currentPage: 1,
@@ -345,20 +377,28 @@ function ExploreServices() {
         total: 0
     });
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const data = await getServiceCategories();
-                setCategories(data.data);
-            } catch (error) {
-                console.error('Error fetching categories:', error);
-            } finally {
-                setCategoriesLoading(false);
-            }
-        };
+    const fetchCategories = async () => {
+        try {
+            const data = await getServiceCategories();
+            setCategories(data.data);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        } finally {
+            setCategoriesLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchCategories();
     }, []);
+
+    useEffect(() => {
+        const cat = searchParams.get('category');
+        if (cat) {
+            setSelectedCategory(cat);
+            setPagination(prev => ({ ...prev, currentPage: 1 }));
+        }
+    }, [searchParams]);
 
 
     useEffect(() => {
@@ -434,6 +474,21 @@ function ExploreServices() {
         setPagination(prev => ({ ...prev, currentPage: 1 }));
     };
 
+    useEffect(() => {
+        const fetchPackages = async () => {
+            setPackagesLoading(true);
+            try {
+                const response = await getServicePackages();
+                setServicePackages(response.data || []);
+            } catch (error) {
+                console.error('Error fetching packages:', error);
+            } finally {
+                setPackagesLoading(false);
+            }
+        };
+        fetchPackages();
+    }, []);
+
     const handleLearnMore = (service) => {
         // Look up CategoryID from the already-fetched categories list
         // categories response: { CategoryID, CategoryName, Services: [{ ServiceID, ServiceName }] }
@@ -504,11 +559,13 @@ function ExploreServices() {
                         <select
                             value={selectedCategory}
                             onChange={handleCategoryChange}
+                            disabled={activeTab === 'packages'}
                             style={{
                                 padding: '14px 18px', border: '1px solid #e2e8f0',
-                                borderRadius: '12px', fontSize: '15px', backgroundColor: 'white',
-                                cursor: 'pointer', minWidth: '180px', color: '#334155',
-                                outline: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                borderRadius: '12px', fontSize: '15px', backgroundColor: activeTab === 'packages' ? '#f8fafc' : 'white',
+                                cursor: activeTab === 'packages' ? 'not-allowed' : 'pointer', minWidth: '180px', color: '#334155',
+                                outline: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                opacity: activeTab === 'packages' ? 0.6 : 1
                             }}
                         >
                             <option value="">All Categories</option>
@@ -534,7 +591,55 @@ function ExploreServices() {
                         </button>
                     </div>
 
-                    {(loading || categoriesLoading) && (
+                    {/* Tab Switcher */}
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        marginBottom: '40px',
+                        gap: '8px',
+                        backgroundColor: '#f1f5f9',
+                        padding: '6px',
+                        borderRadius: '16px',
+                        width: 'fit-content',
+                        margin: '0 auto 48px'
+                    }}>
+                        <button
+                            onClick={() => setActiveTab('services')}
+                            style={{
+                                padding: '10px 24px',
+                                borderRadius: '12px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                backgroundColor: activeTab === 'services' ? 'white' : 'transparent',
+                                color: activeTab === 'services' ? '#4b49ac' : '#64748b',
+                                boxShadow: activeTab === 'services' ? '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)' : 'none',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            Individual Services
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('packages')}
+                            style={{
+                                padding: '10px 24px',
+                                borderRadius: '12px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                backgroundColor: activeTab === 'packages' ? 'white' : 'transparent',
+                                color: activeTab === 'packages' ? '#4b49ac' : '#64748b',
+                                boxShadow: activeTab === 'packages' ? '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)' : 'none',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            Packages
+                        </button>
+                    </div>
+
+                    {(loading || categoriesLoading || packagesLoading) && (
                         <div style={{ textAlign: 'center', padding: '80px 0', color: '#64748b' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
                                 <Oval
@@ -554,15 +659,21 @@ function ExploreServices() {
                         </div>
                     )}
 
-                    {(!loading && !categoriesLoading) && services.length === 0 && (
+                    {activeTab === 'services' && (!loading && !categoriesLoading) && services.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
                             <div style={{ fontSize: '18px', marginBottom: '8px' }}>No services found</div>
                             <div style={{ fontSize: '14px' }}>Try adjusting your search or filters</div>
                         </div>
                     )}
 
+                    {activeTab === 'packages' && !packagesLoading && servicePackages.length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
+                            <div style={{ fontSize: '18px', marginBottom: '8px' }}>No service packages found</div>
+                        </div>
+                    )}
+
                     {/* Services Grid */}
-                    {!loading && !categoriesLoading && services.length > 0 && (
+                    {activeTab === 'services' && !loading && !categoriesLoading && services.length > 0 && (
                         <div style={{
                             display: 'grid',
                             gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
@@ -638,8 +749,120 @@ function ExploreServices() {
                         </div>
                     )}
 
+                    {/* Packages Grid */}
+                    {activeTab === 'packages' && !packagesLoading && servicePackages.length > 0 && (
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+                            gap: '32px', marginBottom: '64px'
+                        }}>
+                            {servicePackages.map((pkg, index) => (
+                                <div
+                                    key={pkg.PackageID}
+                                    style={{
+                                        backgroundColor: 'white', borderRadius: '24px',
+                                        padding: '40px', border: '1px solid #f1f5f9',
+                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        cursor: 'pointer', position: 'relative',
+                                        display: 'flex', flexDirection: 'column'
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.transform = 'translateY(-8px)';
+                                        e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)';
+                                        e.currentTarget.style.borderColor = '#e2e8f0';
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05)';
+                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                    }}
+                                >
+                                    <div style={{
+                                        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px'
+                                    }}>
+                                        <div style={{
+                                            width: '64px', height: '64px',
+                                            background: `linear-gradient(135deg, ${getServiceColor(index)}15 0%, ${getServiceColor(index)}25 100%)`,
+                                            borderRadius: '18px', display: 'flex',
+                                            alignItems: 'center', justifyContent: 'center'
+                                        }}>
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                                stroke={getServiceColor(index)} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                                            </svg>
+                                        </div>
+                                        {pkg.Discount > 0 && (
+                                            <div style={{
+                                                backgroundColor: '#fef2f2', color: '#ef4444',
+                                                padding: '6px 14px', borderRadius: '30px',
+                                                fontSize: '12px', fontWeight: '700',
+                                                letterSpacing: '0.02em', border: '1px solid #fee2e2'
+                                            }}>
+                                                SAVE {pkg.Discount}%
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <h3 style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', marginBottom: '12px', lineHeight: '1.2' }}>
+                                        {pkg.PackageName}
+                                    </h3>
+
+                                    <p style={{
+                                        fontSize: '15px', color: '#64748b', marginBottom: '28px', lineHeight: '1.6', flex: 1
+                                    }}>
+                                        {pkg.Description}
+                                    </p>
+
+                                    <div style={{ marginBottom: '28px' }}>
+                                        <p style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Includes Services:</p>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            {pkg.services?.slice(0, 3).map((s, i) => (
+                                                <span key={i} style={{
+                                                    backgroundColor: '#f8fafc', padding: '6px 12px', borderRadius: '8px',
+                                                    fontSize: '12px', color: '#475569', fontWeight: '500', border: '1px solid #f1f5f9'
+                                                }}>
+                                                    {s.ServiceName}
+                                                </span>
+                                            ))}
+                                            {pkg.services?.length > 3 && (
+                                                <span style={{ fontSize: '12px', color: '#94a3b8', padding: '6px' }}>+{pkg.services.length - 3} more</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div style={{
+                                        paddingTop: '28px', borderTop: '1px solid #f1f5f9',
+                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                    }}>
+                                        <div>
+                                            <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '500' }}>Starting from</span>
+                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                                                <span style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>₹{Math.floor(pkg.MonthlyFinalAmount || 0)}</span>
+                                                <span style={{ fontSize: '13px', color: '#64748b' }}>/mo</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setSelectedService(pkg)}
+                                            style={{
+                                                backgroundColor: '#4b49ac', color: 'white', border: 'none',
+                                                padding: '12px 20px', borderRadius: '12px',
+                                                fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                                                transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(75, 73, 172, 0.2)'
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#3f3da0'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#4b49ac'; }}
+                                        >
+                                            View Details
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
                     {/* Pagination */}
-                    {!loading && !categoriesLoading && services.length > 0 && pagination.totalPages > 1 && (
+                    {activeTab === 'services' && !loading && !categoriesLoading && services.length > 0 && pagination.totalPages > 1 && (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '48px' }}>
                             <button
                                 onClick={() => handlePageChange(pagination.currentPage - 1)}
