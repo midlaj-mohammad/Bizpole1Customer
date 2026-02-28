@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { User, Mail, Phone, Building2, MapPin, FileText, CheckCircle2, Upload, Edit, Download, Share2, Link, X } from 'lucide-react';
+import { User, Mail, Phone, Building2, MapPin, FileText, CheckCircle2, Upload, Edit, Download, Share2, Link, X, Plus, UploadCloud, Eye } from 'lucide-react';
 import { getSecureItem } from '../utils/secureStorage';
 import axiosInstance from '../api/axiosInstance';
 import { getAssociateById, getAssociateDocuments, uploadAssociateDocuments } from '../api/AssociateApi';
@@ -30,6 +30,8 @@ const AssociateProfile = () => {
     const fileInputRef = useRef(null);
     const [selectedDocType, setSelectedDocType] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [modalUploadType, setModalUploadType] = useState(null);
 
     const profileData = {
         fullName: userData?.AssociateName || "John Doe",
@@ -140,6 +142,8 @@ const AssociateProfile = () => {
             await new Promise(res => setTimeout(res, 500));
             await fetchUserData();
             alert("Document uploaded successfully!");
+            setIsUploadModalOpen(false);
+            setModalUploadType(null);
         } catch (error) {
             console.error("Upload failed", error);
             alert("Failed to upload document.");
@@ -413,6 +417,78 @@ const AssociateProfile = () => {
                 </div>
             )}
 
+            {/* Upload New Document Modal */}
+            {isUploadModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+                            <h2 className="text-xl font-bold text-slate-900">Upload New Document</h2>
+                            <button
+                                onClick={() => {
+                                    setIsUploadModalOpen(false);
+                                    setModalUploadType(null);
+                                }}
+                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-slate-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-slate-700">Document Type</label>
+                                <Select
+                                    options={requiredDocuments.map(doc => ({
+                                        value: doc.type,
+                                        label: doc.name
+                                    }))}
+                                    value={modalUploadType ? { value: modalUploadType, label: requiredDocuments.find(d => d.type === modalUploadType)?.name } : null}
+                                    onChange={(selected) => setModalUploadType(selected?.value)}
+                                    placeholder="Select document type..."
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            padding: "4px",
+                                            borderRadius: "0.5rem",
+                                            borderColor: "#cbd5e1",
+                                            boxShadow: state.isFocused ? "0 0 0 2px #009068" : "none",
+                                            "&:hover": { borderColor: "#009068" }
+                                        })
+                                    }}
+                                />
+                            </div>
+
+                            <div
+                                onClick={() => modalUploadType && handleUploadClick(modalUploadType)}
+                                className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 transition-all cursor-pointer
+                                    ${modalUploadType
+                                        ? 'border-slate-300 hover:border-[#009068] hover:bg-slate-50'
+                                        : 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-60'}`}
+                            >
+                                <div className={`p-4 rounded-full ${modalUploadType ? 'bg-green-50 text-[#009068]' : 'bg-slate-100 text-slate-400'}`}>
+                                    <UploadCloud className="w-8 h-8" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="font-semibold text-slate-900">
+                                        {modalUploadType ? 'Click to select file' : 'Select a document type first'}
+                                    </p>
+                                    <p className="text-xs text-slate-500 mt-1">PDF, JPG, PNG (Max 5MB)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-slate-200">
+                            <button
+                                onClick={() => setIsUploadModalOpen(false)}
+                                className="w-full py-2.5 border border-slate-300 text-slate-700 rounded-lg font-bold hover:bg-slate-50 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Profile</h1>
@@ -480,9 +556,11 @@ const AssociateProfile = () => {
 
                     {/* KYC Documents */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <div className="flex items-center gap-2 mb-6">
-                            <FileText className="w-5 h-5 text-slate-700" />
-                            <h2 className="text-lg font-bold text-slate-900">KYC Documents</h2>
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-slate-700" />
+                                <h2 className="text-lg font-bold text-slate-900">KYC Documents</h2>
+                            </div>
                         </div>
 
                         <div className="space-y-4">
@@ -491,8 +569,21 @@ const AssociateProfile = () => {
                                 return (
                                     <div key={index} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
                                         <div className="flex items-center gap-4">
-                                            <div className={`p-3 rounded-lg ${statusInfo.found ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}`}>
-                                                <docType.icon className="w-6 h-6" />
+                                            <div className={`relative group/img w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center ${statusInfo.found ? 'bg-green-50' : 'bg-yellow-50'}`}>
+                                                {statusInfo.found && statusInfo.url && (statusInfo.url.toLowerCase().endsWith('.jpg') || statusInfo.url.toLowerCase().endsWith('.jpeg') || statusInfo.url.toLowerCase().endsWith('.png')) ? (
+                                                    <img
+                                                        src={`${statusInfo.url}?t=${new Date().getTime()}`}
+                                                        alt={docType.name}
+                                                        className="w-full h-full object-cover transition-transform group-hover/img:scale-110"
+                                                    />
+                                                ) : (
+                                                    <docType.icon className={`w-6 h-6 ${statusInfo.found ? 'text-green-600' : 'text-yellow-600'}`} />
+                                                )}
+                                                {statusInfo.found && (
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                                        <Eye className="w-4 h-4 text-white" />
+                                                    </div>
+                                                )}
                                             </div>
                                             <div>
                                                 <h3 className="font-semibold text-slate-900">{docType.name}</h3>
@@ -514,6 +605,13 @@ const AssociateProfile = () => {
                                                     className="flex items-center gap-2 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-50 transition"
                                                 >
                                                     View
+                                                </button>
+                                                <button
+                                                    onClick={() => handleUploadClick(docType.type)}
+                                                    className="flex items-center gap-2 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-50 transition"
+                                                >
+                                                    <Upload className="w-3.5 h-3.5" />
+                                                    Upload New
                                                 </button>
                                             </div>
                                         ) : (
