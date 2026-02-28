@@ -100,7 +100,7 @@ export const uploadAssociateDocuments = async (formData) => {
     console.log(token);
 
     try {
-        const response = api.post(
+        const response = await api.post(
             "/associate/upload-documents",
             formData,
             {
@@ -138,6 +138,8 @@ export const getAssociateDocuments = async (associateId) => {
 export const listAssociateReceipts = async (filters) => {
     try {
         const response = await axiosInstance.post("/associate-receipts", filters);
+        console.log("responseMM", response);
+
         return response.data;
     } catch (error) {
         console.error("Error listing associate receipts:", error);
