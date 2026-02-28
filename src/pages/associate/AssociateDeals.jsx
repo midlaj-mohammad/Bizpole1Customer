@@ -26,6 +26,7 @@ const getDealDataFromParams = (search) => {
                 serviceState: params.get("state") || "",
                 serviceCategory: params.get("category") || "",
                 selectedServices: params.get("serviceId") ? [params.get("serviceId")] : [],
+                packageId: params.get("packageId") || null,
                 serviceType: params.get("type") || "individual"
             };
         }
