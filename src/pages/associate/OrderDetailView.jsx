@@ -51,8 +51,16 @@ const OrderDetailView = () => {
             setLoading(true);
             try {
                 const response = await getOrderById(id);
+                console.log("Order Details", { response });
+
                 if (response.success) {
-                    setOrder(response.data);
+                    const apiData = response.data;
+
+                    setOrder({
+                        ...apiData.order,
+                        ServiceDetails: apiData.services || [],
+                        totals: apiData.totals || {}
+                    });
                 }
             } catch (err) {
                 console.error("fetchOrderDetails error", err);
