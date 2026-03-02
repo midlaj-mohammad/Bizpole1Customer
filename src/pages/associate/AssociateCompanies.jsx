@@ -124,9 +124,7 @@ const AssociateCompanies = () => {
                                             onClick={() => navigate(`/associate/companies/${company.CompanyID}`)}
                                         >
                                             {company.BusinessName}
-
                                         </td>
-
                                         <td className="px-6 py-4 text-sm text-gray-600">{company.CreatedByName || 'Unknown'}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600 font-medium text-[#4b49ac] hover:underline cursor-pointer">
                                             {company.PrimaryCustomerID ? `F${company.FranchiseID}/C${String(company.PrimaryCustomerID).padStart(7, "0")}` : 'null'}
