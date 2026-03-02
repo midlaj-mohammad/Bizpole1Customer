@@ -921,6 +921,11 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                 if (response.success) { onSuccess?.(); onClose(); }
                 else setErrors({ api: response.message || "Failed to update deal" });
             } else {
+                const isIndividual = formData.serviceType === "individual";
+                const selectedPackageObj = !isIndividual
+                    ? availablePackages.find((pkg) => pkg.PackageID === parseInt(formData.selectedPackage))
+                    : null;
+
                 const payload = {
                     leadId: null,
                     customer: {
@@ -944,8 +949,11 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                         isAssociate: true,
                         ...(selectedExistingCompany && { existingCompanyId: selectedExistingCompany.id || selectedExistingCompany.CompanyID }),
                     },
-                    dealType: formData.serviceType === "individual" ? "Individual" : "Package",
-                    isIndividual: formData.serviceType === "individual" ? 1 : 0,
+                    dealType: isIndividual ? "Individual" : "Package",
+                    isIndividual: isIndividual ? 1 : 0,
+                    packageId: isIndividual ? null : (selectedPackageObj?.PackageID || parseInt(formData.selectedPackage) || null),
+                    packageName: isIndividual ? null : (selectedPackageObj?.PackageName || null),
+                    billingPeriod: isIndividual ? null : formData.billingPeriod,
                     serviceType: formData.serviceType,
                     franchiseeId: user.FranchiseeID || 1, employeeId: user.EmployeeID || 9,
                     isAssociate: true, AssociateID: user.id || null,

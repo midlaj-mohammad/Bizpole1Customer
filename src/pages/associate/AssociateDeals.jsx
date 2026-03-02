@@ -120,6 +120,8 @@ const AssociateDeals = () => {
 
             if (result.success) {
                 const dealsData = result.data || [];
+                console.log({ dealsData });
+
                 setDeals(dealsData);
                 fetchCompanyNames(dealsData);
             } else {
@@ -332,16 +334,21 @@ const AssociateDeals = () => {
                                                             {deal.packageName}
                                                         </span>
                                                         <span className="text-[10px] text-slate-400">
-                                                            {deal.serviceNames || "--"}
+                                                            {deal.services?.map(s => s.serviceName).join(", ") || "--"}
                                                         </span>
                                                     </div>
                                                 ) : (
-                                                    deal.serviceNames || deal.serviceName || "--"
+                                                    deal.serviceNames ||
+                                                    (deal.services?.map(s => s.serviceName).join(", ")) ||
+                                                    "--"
                                                 )}
                                             </td>
 
                                             <td className="px-6 py-4 text-sm text-slate-600">
-                                                {deal.serviceCategory || "--"}
+                                                {deal.serviceCategory ||
+                                                    (deal.services?.length > 0
+                                                        ? [...new Set(deal.services.map(s => s.serviceCategory))].join(", ")
+                                                        : "--")}
                                             </td>
 
                                             <td className="px-6 py-4 text-sm text-slate-600">
