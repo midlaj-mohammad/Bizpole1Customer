@@ -138,12 +138,11 @@ const AssociateQuotes = () => {
 
 
     const encrypt = (id) => {
-        const secret =
-            import.meta.env.VITE_QUOTE_LINK_SECRET ||
-            "q3!9fKs7@pLzXr84$nmYtB!cVZdQ3";
-
-        return CryptoJS.AES.encrypt(String(id), secret).toString();
-    };
+    const secret = import.meta.env.VITE_QUOTE_LINK_SECRET || "q3!9fKs7@pLzXr84$nmYtB!cVZdQ3";
+    const encrypted = CryptoJS.AES.encrypt(String(id), secret).toString();
+    // Convert to URL-safe base64: replace +→-, /→_, =→''
+    return encrypted.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+};
 
 
 
