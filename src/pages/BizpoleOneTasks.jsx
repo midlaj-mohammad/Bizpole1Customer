@@ -1,10 +1,14 @@
 // src/App.jsx
-import React, { useState, useEffect } from "react";
+import  { useState, useEffect } from "react";
 import {
-  getServiceFormFullMapping,
+
   getCompanyServices,
   getServiceDeliverablesByServiceDetailId,
+  getResponseFields,
+  getTasks,
 } from "../api/TaskApi";
+// State for tasks fetched from /Task API
+
 import {
   getSecureItem,
   setSecureItem,
@@ -120,13 +124,14 @@ export default function ServiceSelection() {
       ? selectedCompany.CompanyID
       : null;
   const [selectedService, setSelectedService] = useState(null);
-  const [serviceFormMapping, setServiceFormMapping] = useState(null);
+
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [documentsError, setDocumentsError] = useState(null);
+  const [verifiedFields, setVerifiedFields] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Task");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [selectedTask, setSelectedTask] = useState(null);
+
   const [collectDataTask, setCollectDataTask] = useState(null);
   const [noteTask, setNoteTask] = useState(null);
   useEffect(() => {
@@ -151,6 +156,35 @@ export default function ServiceSelection() {
       setSelectedService(null);
     }
   }, [companyId]);
+  const [tasksFromApi, setTasksFromApi] = useState([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [tasksError, setTasksError] = useState(null);
+  // Fetch tasks from /Task API when Task tab is active and service is selected
+  useEffect(() => {
+    const serviceCompanyId =
+      selectedService &&
+      (selectedService.CompanyID || selectedService.companyId || companyId);
+    if (activeTab === "Task" && serviceCompanyId) {
+      setLoadingTasks(true);
+      setTasksError(null);
+      // You can adjust the payload as needed
+      getTasks({
+        ServiceDetailID: selectedService?.ServiceDetailID,
+        QuoteID: selectedService?.QuoteID,
+      })
+        .then((data) => {
+          console.log("[Task API] /Task response:", data);
+          setTasksFromApi(data || []);
+          setLoadingTasks(false);
+        })
+        .catch((err) => {
+          setTasksError("Failed to fetch tasks from /Task API.");
+          setLoadingTasks(false);
+        });
+    } else if (activeTab === "Task") {
+      setTasksFromApi([]);
+    }
+  }, [activeTab, selectedService]);
   // Fix selectedCompany in localStorage if it is not valid JSON
   const getStatusColor = (status) => {
     switch (status) {
@@ -185,20 +219,33 @@ export default function ServiceSelection() {
 
   // Fetch service form mapping when Documents tab is active and service is selected
   useEffect(() => {
-    if (activeTab === "Documents" && selectedService && selectedService.id) {
+    // Use companyId from selectedService if available, else fallback to global companyId
+    const serviceCompanyId =
+      selectedService &&
+      (selectedService.CompanyID || selectedService.companyId || companyId);
+    if (activeTab === "Documents" && serviceCompanyId) {
       setLoadingDocuments(true);
       setDocumentsError(null);
-      getServiceFormFullMapping(selectedService.id)
+      console.log(
+        "[Documents] Fetching response fields for companyId:",
+        serviceCompanyId,
+      );
+      getResponseFields(serviceCompanyId)
         .then((data) => {
-          setServiceFormMapping(data);
+          console.log("[Documents] getResponseFields API response:", data);
+          // Flatten all fields from all results and filter for verify: 1
+          const allFields = (data.results || []).flatMap((r) => r.fields || []);
+          const verified = allFields.filter((f) => f.verify === 1);
+          setVerifiedFields(verified);
           setLoadingDocuments(false);
         })
         .catch((err) => {
-          setDocumentsError("Failed to fetch service form mapping.");
+          console.error("[Documents] getResponseFields API error:", err);
+          setDocumentsError("Failed to fetch verified fields.");
           setLoadingDocuments(false);
         });
     } else {
-      setServiceFormMapping(null);
+      setVerifiedFields([]);
     }
   }, [activeTab, selectedService]);
 
@@ -215,12 +262,18 @@ export default function ServiceSelection() {
     ) {
       setLoadingDeliverables(true);
       setDeliverablesError(null);
+      console.log(
+        "[Deliverables] Fetching for ServiceDetailID:",
+        selectedService.ServiceDetailID,
+      );
       getServiceDeliverablesByServiceDetailId(selectedService.ServiceDetailID)
         .then((data) => {
+          console.log("[Deliverables] API response:", data);
           setServiceDeliverables(data);
           setLoadingDeliverables(false);
         })
         .catch((err) => {
+          console.error("[Deliverables] API error:", err);
           setDeliverablesError("Failed to fetch deliverables.");
           setLoadingDeliverables(false);
         });
@@ -590,7 +643,7 @@ export default function ServiceSelection() {
           )}
         </div>
       </div>
-
+      {/* {to do } */}
       {/* GST Task Card (no dropdown here) */}
       <div className="bg-white  rounded-2xl border border-yellow-500 shadow-lg p-6  mb-6">
         {selectedService && selectedService.ItemName && (
@@ -601,29 +654,89 @@ export default function ServiceSelection() {
         {/* Show selected service name below GST title if selected */}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-          <div className="border-r border-gray-200 pr-4">
-            <p className="text-sm text-gray-600 mb-2">Status</p>
-            <div className="flex items-center gap-2">
-              <span className="bg-yellow-400 text-gray-800 text-xs font-medium px-2 py-1 rounded">
-                In Progress
-              </span>
-              <span className="text-lg font-semibold text-gray-800">51%</span>
+          {loadingTasks ? (
+            <div className="col-span-4 text-center py-6 text-gray-500">
+              Loading summary...
             </div>
-          </div>
-          <div className="border-r border-gray-200 pr-4">
-            <p className="text-sm text-gray-600 mb-2">Total Tasks</p>
-            <p className="text-lg font-semibold text-gray-800">
-              15 <span className="text-gray-400">/</span> 48
-            </p>
-          </div>
-          <div className="border-r border-gray-200 pr-4">
-            <p className="text-sm text-gray-600 mb-2">Start Date</p>
-            <p className="text-lg font-semibold text-gray-800">29 Jan, 2025</p>
-          </div>
-          <div className="border-r border-gray-200 pr-4">
-            <p className="text-sm text-gray-600 mb-2">Payment Due</p>
-            <p className="text-lg font-semibold text-gray-800">$15,000</p>
-          </div>
+          ) : tasksError ? (
+            <div className="col-span-4 text-center py-6 text-red-500">
+              {tasksError}
+            </div>
+          ) : tasksFromApi && tasksFromApi.summary ? (
+            <>
+              <div className="border-r border-gray-200 pr-4">
+                <p className="text-sm text-gray-600 mb-2">Status</p>
+                <div className="flex items-center gap-2">
+                  <span className="bg-yellow-400 text-gray-800 text-xs font-medium px-2 py-1 rounded">
+                    {tasksFromApi.summary.status || "-"}
+                  </span>
+                  <span className="text-lg font-semibold text-gray-800">
+                    {tasksFromApi.summary.percentComplete || "-"}
+                  </span>
+                </div>
+              </div>
+              <div className="border-r border-gray-200 pr-4">
+                <p className="text-sm text-gray-600 mb-2">Total Tasks</p>
+                <p className="text-lg font-semibold text-gray-800">
+                  {tasksFromApi.summary.totalTasks || "-"}
+                </p>
+              </div>
+              <div className="border-r border-gray-200 pr-4">
+                <p className="text-sm text-gray-600 mb-2">Start Date</p>
+                <p className="text-lg font-semibold text-gray-800">
+                  {tasksFromApi.summary.assignedAt || "-"}
+                </p>
+              </div>
+              <div className="border-r border-gray-200 pr-4">
+                <p className="text-sm text-gray-600 mb-2">Payment Due</p>
+                <p className="text-lg font-semibold text-gray-800">
+                  {tasksFromApi.summary.paymentDue !== undefined &&
+                  tasksFromApi.summary.paymentDue !== null
+                    ? `₹${tasksFromApi.summary.paymentDue}`
+                    : "-"}
+                </p>
+              </div>
+            </>
+          ) : tasksFromApi && tasksFromApi.length > 0 ? (
+            <>
+              <div className="border-r border-gray-200 pr-4">
+                <p className="text-sm text-gray-600 mb-2">Status</p>
+                <div className="flex items-center gap-2">
+                  <span className="bg-yellow-400 text-gray-800 text-xs font-medium px-2 py-1 rounded">
+                    {tasksFromApi[0].status || "-"}
+                  </span>
+                  <span className="text-lg font-semibold text-gray-800">
+                    {tasksFromApi[0].percentComplete || "-"}
+                  </span>
+                </div>
+              </div>
+              <div className="border-r border-gray-200 pr-4">
+                <p className="text-sm text-gray-600 mb-2">Total Tasks</p>
+                <p className="text-lg font-semibold text-gray-800">
+                  {tasksFromApi[0].totalTasks || "-"}
+                </p>
+              </div>
+              <div className="border-r border-gray-200 pr-4">
+                <p className="text-sm text-gray-600 mb-2">Start Date</p>
+                <p className="text-lg font-semibold text-gray-800">
+                  {tasksFromApi[0].assignedAt || "-"}
+                </p>
+              </div>
+              <div className="border-r border-gray-200 pr-4">
+                <p className="text-sm text-gray-600 mb-2">Payment Due</p>
+                <p className="text-lg font-semibold text-gray-800">
+                  {tasksFromApi[0].paymentDue !== undefined &&
+                  tasksFromApi[0].paymentDue !== null
+                    ? `₹${tasksFromApi[0].paymentDue}`
+                    : "-"}
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="col-span-4 text-center py-6 text-gray-500">
+              No summary data available.
+            </div>
+          )}
         </div>
       </div>
 
@@ -765,20 +878,60 @@ export default function ServiceSelection() {
             <p className="text-gray-600">Loading documents...</p>
           )}
           {documentsError && <p className="text-red-500">{documentsError}</p>}
-          {!loadingDocuments && !documentsError && serviceFormMapping && (
-            <pre className="bg-gray-100 p-4 rounded text-xs overflow-x-auto">
-              {JSON.stringify(serviceFormMapping, null, 2)}
-            </pre>
-          )}
-          {!loadingDocuments && !documentsError && !serviceFormMapping && (
-            <p className="text-gray-600">No documents uploaded yet.</p>
-          )}
+          {!loadingDocuments &&
+            !documentsError &&
+            verifiedFields.length > 0 && (
+              <div className="flex flex-col gap-3">
+                {verifiedFields.map((field) => (
+                  <div
+                    key={field.fieldRows_id}
+                    className="flex items-center justify-between border border-yellow-400 rounded-full px-5 py-3"
+                  >
+                    <span className="text-sm text-gray-700 truncate max-w-lg">
+                      {field.field_key}
+                    </span>
+                    {field.field_type === "File" ? (
+                      <a
+                        href={field.field_text}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-4 text-gray-500 hover:text-yellow-600 flex-shrink-0"
+                        title="Download"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                      </a>
+                    ) : (
+                      <span className="ml-4 text-gray-800 font-semibold">
+                        {field.field_text}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          {!loadingDocuments &&
+            !documentsError &&
+            verifiedFields.length === 0 && (
+              <p className="text-gray-600">No verified documents found.</p>
+            )}
         </div>
       ) : activeTab === "Deliverables" ? (
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Deliverables
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-6">Uploaded</h3>
           {loadingDeliverables && (
             <p className="text-gray-600">Loading deliverables...</p>
           )}
@@ -787,14 +940,57 @@ export default function ServiceSelection() {
           )}
           {!loadingDeliverables &&
             !deliverablesError &&
-            serviceDeliverables && (
-              <pre className="bg-gray-100 p-4 rounded text-xs overflow-x-auto">
-                {JSON.stringify(serviceDeliverables, null, 2)}
-              </pre>
+            Array.isArray(serviceDeliverables) &&
+            serviceDeliverables.length > 0 && (
+              <div className="flex flex-col gap-3">
+                {serviceDeliverables.map((item) => {
+                  const isFile = item.type === "file";
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between border border-yellow-400 rounded-full px-5 py-3"
+                    >
+                      <span className="text-sm text-gray-700 truncate max-w-lg">
+                        {item.label}
+                      </span>
+                      {isFile ? (
+                        <a
+                          href={item.value}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-4 text-gray-500 hover:text-yellow-600 flex-shrink-0"
+                          title="Download"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                          </svg>
+                        </a>
+                      ) : (
+                        <span className="ml-4 text-gray-800 font-semibold">
+                          {item.value}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           {!loadingDeliverables &&
             !deliverablesError &&
-            !serviceDeliverables && (
+            Array.isArray(serviceDeliverables) &&
+            serviceDeliverables.length === 0 && (
               <p className="text-gray-600">No deliverables available yet.</p>
             )}
         </div>
