@@ -32,12 +32,36 @@ export const getServiceDeliverablesByServiceDetailId = async (
       "/getServiceDeliverablesByServiceDetailId",
       {
         serviceDetailedId: serviceDetailId,
-        permanent: 1,
+        // permanent: 1,
       },
     );
     return response.data.data;
   } catch (error) {
     console.error("Error fetching service deliverables:", error);
+    throw error;
+  }
+};
+// Fetch response fields by company ID
+export const getResponseFields = async (companyId) => {
+  try {
+    const response = await axiosInstance.post("/response-fields", {
+      CompanyID: companyId,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching response fields:", error);
+    throw error;
+  }
+};
+// Fetch response fields for tasks by company ID (for Tasks tab)
+
+// Call /Task API endpoint
+export const getTasks = async (payload) => {
+  try {
+    const response = await axiosInstance.post("/Task", payload);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching tasks from /Task:", error);
     throw error;
   }
 };
