@@ -6,6 +6,7 @@ import {
   getResponseFields,
   getTasks,
   getResponseFieldsBySerId,
+  getServiceFormFullMapping,
 } from "../api/TaskApi";
 import { serviceFormMapping } from "../api/Services/ServiceDetails";
 // State for tasks fetched from /Task API
@@ -253,7 +254,7 @@ export default function ServiceSelection() {
         );
         try {
            
-          const data1 = await getServiceFormFullMapping(
+          const data1 = await getServiceFormFullMapping   (
             selectedService.ServiceID,
             setServiceFormFullMapping(data1)
           );
