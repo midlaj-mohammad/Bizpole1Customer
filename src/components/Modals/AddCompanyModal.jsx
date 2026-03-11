@@ -155,13 +155,15 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
         country: "India",
         state: "",
         district: "",
+        pincode: "",
         preferredLanguage: ""
     });
 
     const [customers, setCustomers] = useState([
         {
             id: Date.now(),
-            name: "",
+            firstName: "",
+            lastName: "",
             mobile: "",
             email: "",
             country: "India",
@@ -186,6 +188,7 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 country: initialData.Country || "India",
                 state: initialData.State || "",
                 district: initialData.District || initialData.City || "",
+                pincode: initialData.PinCode || "",
                 preferredLanguage: initialData.PreferredLanguage || ""
             });
 
@@ -193,7 +196,8 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 setCustomers(initialData.Customers.map(c => ({
                     id: c.CustomerID || Date.now() + Math.random(),
                     CustomerID: c.CustomerID,
-                    name: `${c.FirstName || ""} ${c.LastName || ""}`.trim() || c.CustomerName || "",
+                    firstName: c.FirstName || "",
+                    lastName: c.LastName || "",
                     mobile: c.Mobile || "",
                     email: c.Email || "",
                     country: c.Country || "India",
@@ -215,12 +219,14 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 country: "India",
                 state: "",
                 district: "",
+                pincode: "",
                 preferredLanguage: ""
             });
             setCustomers([
                 {
                     id: Date.now(),
-                    name: "",
+                    firstName: "",
+                    lastName: "",
                     mobile: "",
                     email: "",
                     country: "India",
@@ -250,7 +256,8 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
             ...prev,
             {
                 id: Date.now(),
-                name: "",
+                firstName: "",
+                lastName: "",
                 mobile: "",
                 email: "",
                 country: "India",
@@ -295,7 +302,8 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                     const updated = [...prev];
                     updated[0] = {
                         ...updated[0],
-                        name: fullData.CustomerName || `${fullData.FirstName} ${fullData.LastName}` || "",
+                        firstName: fullData.FirstName || "",
+                        lastName: fullData.LastName || "",
                         mobile: fullData.Mobile || "",
                         email: fullData.Email || "",
                         country: fullData.Country || "India",
@@ -321,7 +329,8 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
             const updated = [...prev];
             updated[0] = {
                 ...updated[0],
-                name: "",
+                firstName: "",
+                lastName: "",
                 mobile: "",
                 email: "",
                 country: "India",
@@ -332,7 +341,6 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 isExisting: false,
                 existingCustomerId: null
             };
-            return updated;
         });
     };
 
@@ -536,6 +544,18 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                         </select>
                                     </div>
 
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-500 uppercase tracking-tight">Pin Code</label>
+                                        <input
+                                            type="text"
+                                            name="pincode"
+                                            value={companyData.pincode}
+                                            onChange={handleCompanyChange}
+                                            className="w-full px-4 py-4 bg-white border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                            placeholder="Enter pin code"
+                                        />
+                                    </div>
+
                                     <div className="space-y-2 col-span-full">
                                         <label className="text-sm font-bold text-gray-500 uppercase tracking-tight">Company Preferred Language</label>
                                         <select
@@ -629,15 +649,27 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2 col-span-full">
-                                                <label className="text-sm font-semibold text-gray-500">Customer Name</label>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-gray-500">First Name</label>
                                                 <input
                                                     type="text"
-                                                    value={customer.name}
-                                                    onChange={(e) => handleCustomerChange(customer.id, "name", e.target.value)}
+                                                    value={customer.firstName}
+                                                    onChange={(e) => handleCustomerChange(customer.id, "firstName", e.target.value)}
                                                     disabled={customer.isExisting}
                                                     className="w-full px-4 py-4 bg-white border border-gray-200 rounded-2xl outline-none text-sm"
-                                                    placeholder="Enter customer name"
+                                                    placeholder="Enter first name"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-gray-500">Last Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={customer.lastName}
+                                                    onChange={(e) => handleCustomerChange(customer.id, "lastName", e.target.value)}
+                                                    disabled={customer.isExisting}
+                                                    className="w-full px-4 py-4 bg-white border border-gray-200 rounded-2xl outline-none text-sm"
+                                                    placeholder="Enter last name"
                                                 />
                                             </div>
 
