@@ -266,13 +266,13 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
     const [servicePopup, setServicePopup] = useState({ open: false, category: null });
 
     const [formData, setFormData] = useState({
-        customerName: "", mobile: "", email: "", country: "India", pincode: "",
+        firstName: "", lastName: "", mobile: "", email: "", country: "India", pincode: "",
         state: "", district: "", preferredLanguage: "", closureDate: "",
         communication: false, serviceType: "individual", serviceCategory: "",
         serviceState: "", selectedServices: [], selectedPackage: null,
         billingPeriod: "monthly", companyName: "", companyGST: "",
         companyMobile: "", companyEmail: "", companyCountry: "India",
-        companyState: "", companyDistrict: "", companyPreferredLanguage: "",
+        companyState: "", companyDistrict: "", companyPincode: "", companyPreferredLanguage: "",
     });
 
     const [availableCompanyDistricts, setAvailableCompanyDistricts] = useState([]);
@@ -351,6 +351,9 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
         if (isOpen) fetch_();
     }, [isOpen]);
 
+    console.log("formData", { formData });
+
+
     useEffect(() => {
         if (!isOpen) return;
         const fetchFullDealDetails = async () => {
@@ -359,25 +362,78 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                     const result = await DealsApi.getDealById(deal.id);
                     if (result.success && result.data) {
                         const d = result.data;
+                        console.log("FETCHED DEAL FOR EDIT:", d);
+                        let fullCustomer = {};
+                        let fullCompany = {};
+
+                        // Fetch full customer details if ID is present
+                        const custId = d.CustomerID || d.customerId || d.CustomerID;
+                        if (custId) {
+                            try {
+                                const cr = await fetch(`${API_BASE_URL}/customer/get`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${getSecureItem("partnerToken")}` },
+                                    body: JSON.stringify({ CustomerID: custId }),
+                                });
+                                const cData = await cr.json();
+                                if (cData.success) fullCustomer = cData.data || {};
+                            } catch (e) { console.error("Error fetching cust", e); }
+                        }
+
+                        // Fetch full company details if ID is present
+                        const compId = d.CompanyID || d.companyId;
+                        if (compId) {
+                            try {
+                                const comR = await fetch(`${API_BASE_URL}/company/get-details`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${getSecureItem("partnerToken")}` },
+                                    body: JSON.stringify({ CompanyId: compId }),
+                                });
+                                const comData = await comR.json();
+                                if (comData.success) fullCompany = comData.data || {};
+                            } catch (e) { console.error("Error fetching comp", e); }
+                        }
+
+                        let fName = d.FirstName || d.firstName || fullCustomer.FirstName || fullCustomer.firstName || "";
+                        let lName = d.LastName || d.lastName || fullCustomer.LastName || fullCustomer.lastName || "";
+                        if (!fName && !lName && (d.name || fullCustomer.CustomerName)) {
+                            const nameToSplit = d.name || fullCustomer.CustomerName || "";
+                            const parts = nameToSplit.trim().split(/\s+/);
+                            fName = parts[0] || "";
+                            lName = parts.slice(1).join(" ") || "";
+                        }
+
                         setFormData({
-                            customerName: d.name || "", mobile: d.mobile || "", email: d.email || "",
-                            country: d.country || "India", pincode: d.PinCode || d.pincode || "",
-                            state: d.state || "", district: d.district || d.District || "",
-                            preferredLanguage: d.PreferredLanguage || d.preferredLanguage || "",
-                            closureDate: d.ClosureDate ? d.ClosureDate.split('T')[0] : "",
-                            serviceType: d.dealType?.toLowerCase() || "individual",
-                            serviceCategory: d.serviceCategoryId || d.services?.[0]?.serviceCategoryId || "",
-                            serviceState: d.StateService || d.state || "",
-                            selectedServices: d.services?.map(s => s.serviceId || s.ServiceID).filter(Boolean) || [],
-                            selectedPackage: d.packageId || null, billingPeriod: d.billingPeriod || "monthly",
-                            companyName: d.CompanyName || "", companyGST: d.CompanyGST || d.gst || "",
-                            companyMobile: d.CompanyMobile || d.mobile || "", companyEmail: d.CompanyEmail || d.email || "",
-                            companyCountry: d.CompanyCountry || "India", companyState: d.CompanyState || d.state || "",
-                            companyDistrict: d.CompanyDistrict || d.district || "",
-                            companyPreferredLanguage: d.CompanyPreferredLanguage || "",
+                            firstName: fName,
+                            lastName: lName,
+                            mobile: d.mobile || d.Mobile || fullCustomer.Mobile || fullCustomer.mobile || "",
+                            email: d.email || d.Email || fullCustomer.Email || fullCustomer.email || "",
+                            country: d.country || d.Country || fullCustomer.Country || "India",
+                            pincode: d.PinCode || d.pincode || fullCustomer.PinCode || fullCustomer.pincode || "",
+                            state: d.state || d.State || fullCustomer.State || fullCustomer.state || "",
+                            district: d.district || d.District || d.city || d.City || fullCustomer.District || fullCustomer.City || "",
+                            preferredLanguage: d.PreferredLanguage || d.preferredLanguage || fullCustomer.PreferredLanguage || "",
+                            closureDate: d.ClosureDate ? d.ClosureDate.split('T')[0] : (d.closureDate ? d.closureDate.split('T')[0] : ""),
+                            serviceType: (d.dealType || d.serviceType || d.DealType || "individual").toLowerCase(),
+                            serviceCategory: d.serviceCategoryId || d.service_category_id || d.ServiceCategoryID || d.CategoryID || d.categoryId || d.serviceCategory || d.ServiceCategory || (d.services && d.services.length > 0 ? (d.services[0].serviceCategoryId || d.services[0].service_category_id || d.services[0].ServiceCategoryID || d.services[0].CategoryID || d.services[0].categoryId || d.services[0].serviceCategory || d.services[0].ServiceCategory) : "") || "",
+                            serviceState: d.StateService || d.serviceState || d.state || d.State || d.ServiceState || "",
+                            selectedServices: d.services?.map(s => s.serviceId || s.ServiceID || s.service_id || s.ServiceId || s.id).filter(Boolean) || [],
+                            selectedPackage: d.packageId || d.PackageID || d.package_id || d.PackageId || null,
+                            billingPeriod: d.billingPeriod || d.BillingPeriod || "monthly",
+                            companyName: d.CompanyName || fullCompany.BusinessName || fullCompany.CompanyName || d.companyName || "",
+                            companyGST: d.CompanyGST || d.GSTNumber || fullCompany.GSTNumber || fullCompany.CompanyGST || d.gst || "",
+                            companyMobile: d.CompanyMobile || fullCompany.CompanyMobile || fullCompany.Mobile || d.companyMobile || "",
+                            companyEmail: d.CompanyEmail || fullCompany.CompanyEmail || fullCompany.Email || d.companyEmail || "",
+                            companyCountry: d.CompanyCountry || fullCompany.Country || "India",
+                            companyState: d.CompanyState || fullCompany.State || d.companyState || "",
+                            companyDistrict: d.CompanyDistrict || fullCompany.District || d.companyDistrict || "",
+                            companyPincode: d.CompanyPincode || fullCompany.PinCode || fullCompany.pincode || d.companyPincode || "",
+                            companyPreferredLanguage: d.CompanyPreferredLanguage || fullCompany.PreferredLanguage || d.companyPreferredLanguage || "",
                             communication: d.communication === 1 || d.communication === true || false,
                         });
-                        setDealType(d.dealType || "Individual");
+                        setDealType((d.dealType || d.DealType || "individual").toLowerCase() === "package" ? "Package" : "Individual");
+                        if (custId) { setSelectedExistingCustomer(fullCustomer); setUseExistingCustomer(true); }
+                        if (compId) { setSelectedExistingCompany(fullCompany); setUseExistingCompany(true); setAssociateCustomersForCompany(fullCompany.Customers || []); }
                     }
                 } catch (err) { console.error("Error fetching full deal details", err); }
             } else if (!deal) {
@@ -393,13 +449,13 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                     setStep(1);
                 } else {
                     setFormData({
-                        customerName: "", mobile: "", email: "", country: "India", pincode: "",
+                        firstName: "", lastName: "", mobile: "", email: "", country: "India", pincode: "",
                         state: "", district: "", preferredLanguage: "", closureDate: "",
                         communication: false, serviceType: "individual", serviceCategory: "",
                         serviceState: "", selectedServices: [], selectedPackage: null,
                         billingPeriod: "monthly", companyName: "", companyGST: "",
                         companyMobile: "", companyEmail: "", companyCountry: "India",
-                        companyState: "", companyDistrict: "", companyPreferredLanguage: "",
+                        companyState: "", companyDistrict: "", companyPincode: "", companyPreferredLanguage: "",
                     });
                     setDealType("Individual"); setStep(1);
                 }
@@ -408,9 +464,17 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
         fetchFullDealDetails();
     }, [isOpen, deal, initialData]);
 
+    // Resolve category name to ID if needed
+    useEffect(() => {
+        if (formData.serviceCategory && isNaN(formData.serviceCategory) && serviceCategories.length > 0) {
+            const found = serviceCategories.find(c => c.CategoryName === formData.serviceCategory);
+            if (found) setFormData(prev => ({ ...prev, serviceCategory: found.CategoryID }));
+        }
+    }, [formData.serviceCategory, serviceCategories]);
+
     useEffect(() => {
         const fetch_ = async () => {
-            if (!formData.serviceCategory) { setAvailableServices([]); return; }
+            if (!formData.serviceCategory || isNaN(formData.serviceCategory)) { setAvailableServices([]); return; }
             try {
                 const r = await fetch(`${API_BASE_URL}/service-categories/${formData.serviceCategory}?limit=100`, { headers: { Authorization: `Bearer ${getSecureItem("partnerToken")}` } });
                 const d = await r.json();
@@ -441,17 +505,17 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
             try {
                 const selectedState = availableStates.find((s) => s.state_name === formData.serviceState);
                 if (!selectedState) return;
-                const r = await fetch(`${API_BASE_URL}/service-price-currency?StateName=Kerala&ServiceID=256`, {
+                const r = await fetch(`${API_BASE_URL}/service-price-currency`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json", Authorization: `Bearer ${getSecureItem("partnerToken")}` },
-                    body: JSON.stringify({ StateID: selectedState.ID, ServiceIDs: formData.selectedServices, isIndividual: 1, packageId: null, yearly: 0 }),
+                    body: JSON.stringify({ StateID: selectedState.ID, ServiceIDs: formData.selectedServices, isIndividual: formData.serviceType === 'individual' ? 1 : 0, packageId: formData.selectedPackage, yearly: formData.billingPeriod === 'yearly' ? 1 : 0 }),
                 });
                 const d = await r.json();
                 if (d.success) setServicePricing(d.data || []);
             } catch { setServicePricing([]); }
         };
         fetch_();
-    }, [formData.serviceState, formData.selectedServices, availableStates]);
+    }, [formData.serviceState, formData.selectedServices, formData.serviceType, formData.selectedPackage, formData.billingPeriod, availableStates]);
 
     useEffect(() => {
         const fetch_ = async () => {
@@ -493,8 +557,9 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
             const data = await r.json();
             if (data.success && data.data) {
                 const c = data.data;
-                const name = c.CustomerName || c.name || c.Name || ((c.FirstName || c.LastName) ? `${c.FirstName || ''} ${c.LastName || ''}`.trim() : "");
-                setFormData(prev => ({ ...prev, customerName: name, mobile: c.Mobile || c.mobile || "", email: c.Email || c.email || "", country: c.Country || c.country || "India", pincode: c.PinCode || c.Pincode || c.pincode || "", state: c.State || c.state || "", district: c.District || c.district || "", preferredLanguage: c.PreferredLanguage || c.preferredLanguage || "", communication: c.communication === 1 || c.communication === true || false }));
+                const firstName = c.FirstName || "";
+                const lastName = c.LastName || "";
+                setFormData(prev => ({ ...prev, firstName: firstName, lastName: lastName, mobile: c.Mobile || c.mobile || "", email: c.Email || c.email || "", country: c.Country || c.country || "India", pincode: c.PinCode || c.Pincode || c.pincode || "", state: c.State || c.state || "", district: c.District || c.district || "", preferredLanguage: c.PreferredLanguage || c.preferredLanguage || "", communication: c.communication === 1 || c.communication === true || false }));
             }
         } catch { }
     };
@@ -513,11 +578,11 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
             const data = await r.json();
             if (data.success && data.data) {
                 const c = data.data;
-                setFormData(prev => ({ ...prev, companyName: c.BusinessName || c.CompanyName || c.name || c.Name || "", companyGST: c.GSTNumber || c.CompanyGST || c.gst || c.GST || "", companyMobile: c.CompanyMobile || c.Mobile || c.mobile || "", companyEmail: c.CompanyEmail || c.Email || c.email || "", companyCountry: c.Country || c.country || "India", companyState: c.State || c.state || "", companyDistrict: c.District || c.district || "", companyPreferredLanguage: c.PreferredLanguage || c.preferredLanguage || "" }));
+                setFormData(prev => ({ ...prev, companyName: c.BusinessName || c.CompanyName || c.name || c.Name || "", companyGST: c.GSTNumber || c.CompanyGST || c.gst || c.GST || "", companyMobile: c.CompanyMobile || c.Mobile || c.mobile || "", companyEmail: c.CompanyEmail || c.Email || c.email || "", companyCountry: c.Country || c.country || "India", companyState: c.State || c.state || "", companyDistrict: c.District || c.district || "", companyPincode: c.PinCode || c.pincode || "", companyPreferredLanguage: c.PreferredLanguage || c.preferredLanguage || "" }));
                 setAssociateCustomersForCompany(c.Customers || []);
                 if (c.Customers?.length > 0) { setUseExistingCustomer(true); setShowCustomerDropdown(true); }
             } else {
-                setFormData(prev => ({ ...prev, companyName: company.BusinessName || company.CompanyName || company.name || company.Name || "", companyGST: company.GSTNumber || company.CompanyGST || company.gst || company.GST || "", companyMobile: company.CompanyMobile || company.Mobile || company.mobile || "", companyEmail: company.CompanyEmail || company.Email || company.email || "", companyCountry: company.Country || company.country || "India", companyState: company.State || company.state || "", companyDistrict: company.District || company.district || "", companyPreferredLanguage: company.PreferredLanguage || company.preferredLanguage || "" }));
+                setFormData(prev => ({ ...prev, companyName: company.BusinessName || company.CompanyName || company.name || company.Name || "", companyGST: company.GSTNumber || company.CompanyGST || company.gst || company.GST || "", companyMobile: company.CompanyMobile || company.Mobile || company.mobile || "", companyEmail: company.CompanyEmail || company.Email || company.email || "", companyCountry: company.Country || company.country || "India", companyState: company.State || company.state || "", companyDistrict: company.District || company.district || "", companyPincode: company.PinCode || company.pincode || "", companyPreferredLanguage: company.PreferredLanguage || company.preferredLanguage || "" }));
                 fetchCustomersForCompany(companyId);
             }
         } catch { fetchCustomersForCompany(companyId); }
@@ -525,15 +590,14 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
     };
 
     const toggleExistingCustomer = () => {
-        if (useExistingCustomer) { setUseExistingCustomer(false); setShowCustomerDropdown(false); setSelectedExistingCustomer(null); setFormData(prev => ({ ...prev, customerName: "", mobile: "", email: "", country: "India", pincode: "", state: "", district: "", preferredLanguage: "", communication: false })); }
+        if (useExistingCustomer) { setUseExistingCustomer(false); setShowCustomerDropdown(false); setSelectedExistingCustomer(null); setFormData(prev => ({ ...prev, firstName: "", lastName: "", mobile: "", email: "", country: "India", pincode: "", state: "", district: "", preferredLanguage: "", communication: false })); }
         else { setUseExistingCustomer(true); setShowCustomerDropdown(true); }
     };
 
     const toggleExistingCompany = () => {
-        if (useExistingCompany) { setUseExistingCompany(false); setShowCompanyDropdown(false); setSelectedExistingCompany(null); setFormData(prev => ({ ...prev, companyName: "", companyGST: "", companyMobile: "", companyEmail: "", companyCountry: "India", companyState: "", companyDistrict: "", companyPreferredLanguage: "" })); }
+        if (useExistingCompany) { setUseExistingCompany(false); setShowCompanyDropdown(false); setSelectedExistingCompany(null); setFormData(prev => ({ ...prev, companyName: "", companyGST: "", companyMobile: "", companyEmail: "", companyCountry: "India", companyState: "", companyDistrict: "", companyPincode: "", companyPreferredLanguage: "" })); }
         else { setUseExistingCompany(true); setShowCompanyDropdown(true); }
     };
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => { const u = { ...prev, [name]: value }; if (name === "serviceType") u.dealType = value === "individual" ? "Individual" : "Package"; return u; });
@@ -566,7 +630,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
     };
     const validateStep3 = () => {
         const e = {};
-        if (!formData.customerName.trim()) e.customerName = "Required";
+        if (!formData.firstName.trim()) e.firstName = "Required";
         if (!formData.mobile.trim()) e.mobile = "Required";
         if (!formData.email.trim()) e.email = "Required";
         if (!formData.state) e.state = "Required";
@@ -599,13 +663,13 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                 }
             }
             if (deal && deal.id) {
-                const payload = { id: deal.id, name: formData.customerName, mobile: formData.mobile, email: formData.email, state: formData.state, franchiseId: user.FranchiseeID || 1, employeeId: user.EmployeeID || 9, converted_at: deal.converted_at || new Date().toISOString(), CompanyID: deal.CompanyID, CustomerID: deal.CustomerID, ClosureDate: formData.closureDate, serviceCategoryId: formData.serviceCategory, serviceCategory: selectedCategory?.CategoryName || "", quoteCRE: deal.quoteCRE || 9, sourceOfSale: deal.sourceOfSale || "Direct", dealType: formData.serviceType === "individual" ? "Individual" : "Package", isIndividual: formData.serviceType === "individual" ? 1 : 0, services: servicesPayload, packageName: formData.serviceType === "package" ? servicesPayload[0]?.packageName : null, packageId: formData.serviceType === "package" ? servicesPayload[0]?.packageId : null, billingPeriod: formData.billingPeriod, StateService: formData.serviceState, AssociateID: user.id || null, communication: formData.communication };
+                const payload = { id: deal.id, name: `${formData.firstName} ${formData.lastName}`.trim(), firstName: formData.firstName, lastName: formData.lastName, mobile: formData.mobile, email: formData.email, state: formData.state, franchiseId: user.FranchiseeID || 1, employeeId: user.EmployeeID || 9, converted_at: deal.converted_at || new Date().toISOString(), CompanyID: deal.CompanyID, CustomerID: deal.CustomerID, ClosureDate: formData.closureDate, serviceCategoryId: formData.serviceCategory, serviceCategory: selectedCategory?.CategoryName || "", quoteCRE: deal.quoteCRE || 9, sourceOfSale: deal.sourceOfSale || "Direct", dealType: formData.serviceType === "individual" ? "Individual" : "Package", isIndividual: formData.serviceType === "individual" ? 1 : 0, services: servicesPayload, packageName: formData.serviceType === "package" ? servicesPayload[0]?.packageName : null, packageId: formData.serviceType === "package" ? servicesPayload[0]?.packageId : null, billingPeriod: formData.billingPeriod, StateService: formData.serviceState, AssociateID: user.id || null, communication: formData.communication };
                 const response = await DealsApi.updateDeal(payload);
                 if (response.success) { onSuccess?.(); onClose(); } else setErrors({ api: response.message || "Failed to update deal" });
             } else {
                 const isIndividual = formData.serviceType === "individual";
                 const selectedPackageObj = !isIndividual ? availablePackages.find((pkg) => pkg.PackageID === parseInt(formData.selectedPackage)) : null;
-                const payload = { leadId: null, customer: { name: formData.customerName, mobile: formData.mobile, email: formData.email, country: formData.country, pincode: formData.pincode, state: formData.state, district: formData.district, preferredLanguage: formData.preferredLanguage, closureDate: formData.closureDate, communication: formData.communication, isAssociate: true, ...(selectedExistingCustomer && { existingCustomerId: selectedExistingCustomer.id || selectedExistingCustomer.CustomerID }), services: servicesPayload.map(s => ({ ...s, ServiceID: s.serviceId, ServiceName: s.serviceName, CategoryID: s.serviceCategoryId, CategoryName: s.serviceCategory, TotalFee: s.total, ProfessionalFee: s.professionalFee, VendorFee: s.vendorFee, GovernmentFee: s.govtFee, ContractFee: s.contractorFee })) }, company: { name: formData.companyName, gst: formData.companyGST, mobile: formData.companyMobile, email: formData.companyEmail, country: formData.companyCountry, state: formData.companyState, district: formData.companyDistrict, preferredLanguage: formData.companyPreferredLanguage, isAssociate: true, ...(selectedExistingCompany && { existingCompanyId: selectedExistingCompany.id || selectedExistingCompany.CompanyID }) }, dealType: isIndividual ? "Individual" : "Package", isIndividual: isIndividual ? 1 : 0, packageId: isIndividual ? null : (selectedPackageObj?.PackageID || parseInt(formData.selectedPackage) || null), packageName: isIndividual ? null : (selectedPackageObj?.PackageName || null), billingPeriod: isIndividual ? null : formData.billingPeriod, serviceType: formData.serviceType, franchiseeId: user.FranchiseeID || 1, employeeId: user.EmployeeID || 9, isAssociate: true, AssociateID: user.id || null };
+                const payload = { leadId: null, customer: { firstName: formData.firstName, lastName: formData.lastName, name: `${formData.firstName} ${formData.lastName}`.trim(), mobile: formData.mobile, email: formData.email, country: formData.country, pincode: formData.pincode, state: formData.state, district: formData.district, preferredLanguage: formData.preferredLanguage, closureDate: formData.closureDate, communication: formData.communication, isAssociate: true, ...(selectedExistingCustomer && { existingCustomerId: selectedExistingCustomer.id || selectedExistingCustomer.CustomerID }), services: servicesPayload.map(s => ({ ...s, ServiceID: s.serviceId, ServiceName: s.serviceName, CategoryID: s.serviceCategoryId, CategoryName: s.serviceCategory, TotalFee: s.total, ProfessionalFee: s.professionalFee, VendorFee: s.vendorFee, GovernmentFee: s.govtFee, ContractFee: s.contractorFee })) }, company: { name: formData.companyName, gst: formData.companyGST, mobile: formData.companyMobile, email: formData.companyEmail, country: formData.companyCountry, pincode: formData.companyPincode, state: formData.companyState, district: formData.companyDistrict, preferredLanguage: formData.companyPreferredLanguage, isAssociate: true, ...(selectedExistingCompany && { existingCompanyId: selectedExistingCompany.id || selectedExistingCompany.CompanyID }) }, dealType: isIndividual ? "Individual" : "Package", isIndividual: isIndividual ? 1 : 0, packageId: isIndividual ? null : (selectedPackageObj?.PackageID || parseInt(formData.selectedPackage) || null), packageName: isIndividual ? null : (selectedPackageObj?.PackageName || null), billingPeriod: isIndividual ? null : formData.billingPeriod, serviceType: formData.serviceType, franchiseeId: user.FranchiseeID || 1, employeeId: user.EmployeeID || 9, isAssociate: true, AssociateID: user.id || null };
                 const response = await DealsApi.convertToDeal(payload);
                 if (response.success) { onSuccess?.(); onClose(); } else setErrors({ api: response.message || "Failed to create deal" });
             }
@@ -781,6 +845,12 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                             </div>
                                         </div>
+
+                                        {/* Company Pin Code */}
+                                        <div className="col-span-2">
+                                            <FieldLabel icon={MapPin} label="Company Pin Code" />
+                                            <input type="text" name="companyPincode" value={formData.companyPincode} onChange={handleChange} placeholder="Enter company pin code" className={inputCls(false)} />
+                                        </div>
                                     </div>
                                 </motion.div>
                             )}
@@ -923,7 +993,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                         {/* Customer Name */}
                                         <div className="relative col-span-2">
                                             <div className="flex items-center justify-between mb-1.5">
-                                                <FieldLabel icon={Users} label="Customer Name" required />
+                                                <FieldLabel icon={Users} label="First Name" required />
                                                 {!selectedExistingCustomer && <IfExistingButton active={useExistingCustomer} onClick={toggleExistingCustomer} />}
                                             </div>
                                             {useExistingCustomer ? (
@@ -933,7 +1003,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                                         <div className="flex items-center gap-2 min-w-0">
                                                             <Users className="w-4 h-4 text-gray-400 flex-shrink-0" />
                                                             <span className={selectedExistingCustomer ? "text-gray-800 font-medium truncate" : "text-gray-300 truncate"}>
-                                                                {selectedExistingCustomer ? (selectedExistingCustomer.CustomerName || selectedExistingCustomer.name || ((selectedExistingCustomer.FirstName || selectedExistingCustomer.LastName) ? `${selectedExistingCustomer.FirstName || ''} ${selectedExistingCustomer.LastName || ''}`.trim() : "")) : (isFetchingCustomers ? "Loading…" : "Select existing customer…")}
+                                                                {selectedExistingCustomer ? (selectedExistingCustomer.FirstName || formData.firstName || selectedExistingCustomer.CustomerName || selectedExistingCustomer.name || "") : (isFetchingCustomers ? "Loading…" : "Select existing customer…")}
                                                             </span>
                                                         </div>
                                                         {isFetchingCustomers ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" /> : <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showCustomerDropdown ? "rotate-180" : ""}`} />}
@@ -971,9 +1041,15 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                                     )}
                                                 </div>
                                             ) : (
-                                                <input type="text" name="customerName" value={formData.customerName} onChange={handleChange} placeholder="Enter customer name" className={inputCls(errors.customerName)} />
+                                                <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} placeholder="Enter first name" className={inputCls(errors.firstName)} />
                                             )}
-                                            {errors.customerName && <p className="text-xs text-red-500 mt-1">{errors.customerName}</p>}
+                                            {errors.firstName && <p className="text-xs text-red-500 mt-1">{errors.firstName}</p>}
+                                        </div>
+
+                                        {/* Last Name */}
+                                        <div className="col-span-2">
+                                            <FieldLabel icon={Users} label="Last Name" />
+                                            <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Enter last name" className={inputCls(false)} />
                                         </div>
 
                                         {/* Mobile */}
@@ -1031,14 +1107,19 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                                             </div>
                                         </div>
 
-                                        {/* Closure Date */}
+                                        {/* Pin Code */}
                                         <div>
+                                            <FieldLabel icon={MapPin} label="Customer Pin Code" />
+                                            <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} placeholder="Enter customer pin code" className={inputCls(false)} />
+                                        </div>
+
+                                        {/* Closure Date */}
+                                        <div className="col-span-2">
                                             <FieldLabel icon={Calendar} label="Closure Date" required />
                                             <input type="date" name="closureDate" value={formData.closureDate} onChange={handleChange} className={inputCls(errors.closureDate)} />
                                             {errors.closureDate && <p className="text-xs text-red-500 mt-1">{errors.closureDate}</p>}
                                         </div>
                                     </div>
-
                                     {errors.api && <p className="text-sm text-red-500 text-center py-2">{errors.api}</p>}
                                 </motion.div>
                             )}

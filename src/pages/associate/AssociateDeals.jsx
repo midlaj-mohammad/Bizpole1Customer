@@ -296,16 +296,15 @@ const AssociateDeals = () => {
                                                 {index + 1}
                                             </td>
 
-                                            <td className="px-6 py-4 text-sm text-slate-400 font-mono tracking-tight">
+                                            <td onClick={() => navigate(`/associate/deals/${deal.id}`)} className=" cursor-pointer hover:text-blue-600 transition-colors px-6 py-4 text-sm text-blue-400 font-mono tracking-tight">
                                                 {deal.DealCode || "--"}
                                             </td>
 
                                             <td className="px-6 py-4">
                                                 <div
-                                                    className="flex items-center gap-2 cursor-pointer"
-                                                    onClick={() => navigate(`/associate/deals/${deal.id}`)}
+                                                    className="flex items-center gap-2 "
                                                 >
-                                                    <span className="text-sm font-bold text-slate-900 hover:text-[#4b49ac] transition-colors">
+                                                    <span className="text-sm font-bold text-slate-900 ">
                                                         {deal.name}
                                                     </span>
                                                 </div>
@@ -370,38 +369,44 @@ const AssociateDeals = () => {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-end gap-2">
                                                     {!existingQuoteDealIds.includes(deal.id) ? (
-                                                        <button
-                                                            onClick={() => handleCreateQuote(deal)}
-                                                            disabled={creatingQuote === deal.id || deal.associate_request === 1}
-                                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-1.5 ${deal.associate_request === 1
-                                                                ? "bg-slate-100 text-slate-500"
-                                                                : "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                                                                }`}
-                                                        >
-                                                            {creatingQuote === deal.id ? (
-                                                                <>
-                                                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                                                    Requesting...
-                                                                </>
-                                                            ) : (
-                                                                deal.associate_request === 1 ? "Requested" : "Request Quote"
-                                                            )}
-                                                        </button>
-                                                    ) : <div className='px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-1.5 bg-slate-100 text-slate-400'>Created</div>}
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleCreateQuote(deal)}
+                                                                disabled={creatingQuote === deal.id || deal.associate_request === 1}
+                                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-1.5 ${deal.associate_request === 1
+                                                                    ? "bg-slate-100 text-slate-500"
+                                                                    : "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                                                                    }`}
+                                                            >
+                                                                {creatingQuote === deal.id ? (
+                                                                    <>
+                                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                                        Requesting...
+                                                                    </>
+                                                                ) : (
+                                                                    deal.associate_request === 1 ? "Requested" : "Request Quote"
+                                                                )}
+                                                            </button>
 
-                                                    <button
-                                                        onClick={() => handleEdit(deal)}
-                                                        className="p-2 text-slate-400 hover:text-[#4b49ac] hover:bg-slate-100 rounded-lg transition-all"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
+                                                            <button
+                                                                onClick={() => handleEdit(deal)}
+                                                                className="p-2 text-slate-400 hover:text-[#4b49ac] hover:bg-slate-100 rounded-lg transition-all"
+                                                            >
+                                                                <Edit2 className="w-4 h-4" />
+                                                            </button>
 
-                                                    <button
-                                                        onClick={() => handleDelete(deal)}
-                                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                            <button
+                                                                onClick={() => handleDelete(deal)}
+                                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <div className='px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-1.5 bg-slate-100 text-slate-400'>
+                                                            Created
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
