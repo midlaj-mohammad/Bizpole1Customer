@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, Loader2, Eye, Phone, PhoneOff, Tag, FileText, CheckCircle, Users, Building2, Search, MapPin, Mail, Globe, Languages, Calendar, Hash, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -663,13 +663,99 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                 }
             }
             if (deal && deal.id) {
-                const payload = { id: deal.id, name: `${formData.firstName} ${formData.lastName}`.trim(), firstName: formData.firstName, lastName: formData.lastName, mobile: formData.mobile, email: formData.email, state: formData.state, franchiseId: user.FranchiseeID || 1, employeeId: user.EmployeeID || 9, converted_at: deal.converted_at || new Date().toISOString(), CompanyID: deal.CompanyID, CustomerID: deal.CustomerID, ClosureDate: formData.closureDate, serviceCategoryId: formData.serviceCategory, serviceCategory: selectedCategory?.CategoryName || "", quoteCRE: deal.quoteCRE || 9, sourceOfSale: deal.sourceOfSale || "Direct", dealType: formData.serviceType === "individual" ? "Individual" : "Package", isIndividual: formData.serviceType === "individual" ? 1 : 0, services: servicesPayload, packageName: formData.serviceType === "package" ? servicesPayload[0]?.packageName : null, packageId: formData.serviceType === "package" ? servicesPayload[0]?.packageId : null, billingPeriod: formData.billingPeriod, StateService: formData.serviceState, AssociateID: user.id || null, communication: formData.communication };
+                const payload = {
+                    id: deal.id,
+                    name: `${formData.firstName} ${formData.lastName}`.trim(),
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    mobile: formData.mobile,
+                    email: formData.email,
+                    state: formData.state,
+                    franchiseId: user.FranchiseeID || 1,
+                    employeeId: user.EmployeeID || 9,
+                    converted_at: deal.converted_at || new Date().toISOString(),
+                    CompanyID: deal.CompanyID,
+                    CustomerID: deal.CustomerID,
+                    ClosureDate: formData.closureDate,
+                    serviceCategoryId: formData.serviceCategory,
+                    serviceCategory: selectedCategory?.CategoryName || "",
+                    quoteCRE: deal.quoteCRE || 9,
+                    sourceOfSale: "Associate",
+                    dealType: formData.serviceType === "individual" ? "Individual" : "Package",
+                    isIndividual: formData.serviceType === "individual" ? 1 : 0,
+                    services: servicesPayload,
+                    packageName: formData.serviceType === "package" ? servicesPayload[0]?.packageName : null,
+                    packageId: formData.serviceType === "package" ? servicesPayload[0]?.packageId : null,
+                    billingPeriod: formData.billingPeriod,
+                    StateService: formData.serviceState,
+                    AssociateID: user.id || null,
+                    communication: formData.communication
+                };
+                console.log("Update Payload:", payload);
                 const response = await DealsApi.updateDeal(payload);
                 if (response.success) { onSuccess?.(); onClose(); } else setErrors({ api: response.message || "Failed to update deal" });
             } else {
                 const isIndividual = formData.serviceType === "individual";
                 const selectedPackageObj = !isIndividual ? availablePackages.find((pkg) => pkg.PackageID === parseInt(formData.selectedPackage)) : null;
-                const payload = { leadId: null, customer: { firstName: formData.firstName, lastName: formData.lastName, name: `${formData.firstName} ${formData.lastName}`.trim(), mobile: formData.mobile, email: formData.email, country: formData.country, pincode: formData.pincode, state: formData.state, district: formData.district, preferredLanguage: formData.preferredLanguage, closureDate: formData.closureDate, communication: formData.communication, isAssociate: true, ...(selectedExistingCustomer && { existingCustomerId: selectedExistingCustomer.id || selectedExistingCustomer.CustomerID }), services: servicesPayload.map(s => ({ ...s, ServiceID: s.serviceId, ServiceName: s.serviceName, CategoryID: s.serviceCategoryId, CategoryName: s.serviceCategory, TotalFee: s.total, ProfessionalFee: s.professionalFee, VendorFee: s.vendorFee, GovernmentFee: s.govtFee, ContractFee: s.contractorFee })) }, company: { name: formData.companyName, gst: formData.companyGST, mobile: formData.companyMobile, email: formData.companyEmail, country: formData.companyCountry, pincode: formData.companyPincode, state: formData.companyState, district: formData.companyDistrict, preferredLanguage: formData.companyPreferredLanguage, isAssociate: true, ...(selectedExistingCompany && { existingCompanyId: selectedExistingCompany.id || selectedExistingCompany.CompanyID }) }, dealType: isIndividual ? "Individual" : "Package", isIndividual: isIndividual ? 1 : 0, packageId: isIndividual ? null : (selectedPackageObj?.PackageID || parseInt(formData.selectedPackage) || null), packageName: isIndividual ? null : (selectedPackageObj?.PackageName || null), billingPeriod: isIndividual ? null : formData.billingPeriod, serviceType: formData.serviceType, franchiseeId: user.FranchiseeID || 1, employeeId: user.EmployeeID || 9, isAssociate: true, AssociateID: user.id || null };
+                const payload = {
+                    leadId: null,
+                    customer: {
+                        firstName: formData.firstName,
+                        lastName: formData.lastName,
+                        name: `${formData.firstName} ${formData.lastName}`.trim(),
+                        mobile: formData.mobile,
+                        email: formData.email,
+                        country: formData.country,
+                        pincode: formData.pincode,
+                        state: formData.state,
+                        district: formData.district,
+                        preferredLanguage: formData.preferredLanguage,
+                        closureDate: formData.closureDate,
+                        communication: formData.communication,
+                        isAssociate: true,
+                        sourceOfSale: "Associate",
+                        ...(selectedExistingCustomer && { existingCustomerId: selectedExistingCustomer.id || selectedExistingCustomer.CustomerID }),
+                        services: servicesPayload.map(s => ({
+                            ...s,
+                            ServiceID: s.serviceId,
+                            ServiceName: s.serviceName,
+                            CategoryID: s.serviceCategoryId,
+                            CategoryName: s.serviceCategory,
+                            TotalFee: s.total,
+                            ProfessionalFee: s.professionalFee,
+                            VendorFee: s.vendorFee,
+                            GovernmentFee: s.govtFee,
+                            ContractFee: s.contractorFee
+                        }))
+                    },
+                    company: {
+                        name: formData.companyName,
+                        gst: formData.companyGST,
+                        mobile: formData.companyMobile,
+                        email: formData.companyEmail,
+                        country: formData.companyCountry,
+                        pincode: formData.companyPincode,
+                        state: formData.companyState,
+                        district: formData.companyDistrict,
+                        preferredLanguage: formData.companyPreferredLanguage,
+                        isAssociate: true,
+                        sourceOfSale: "Associate",
+                        ...(selectedExistingCompany && { existingCompanyId: selectedExistingCompany.id || selectedExistingCompany.CompanyID })
+                    },
+                    dealType: isIndividual ? "Individual" : "Package",
+                    isIndividual: isIndividual ? 1 : 0,
+                    packageId: isIndividual ? null : (selectedPackageObj?.PackageID || parseInt(formData.selectedPackage) || null),
+                    packageName: isIndividual ? null : (selectedPackageObj?.PackageName || null),
+                    billingPeriod: isIndividual ? null : formData.billingPeriod,
+                    serviceType: formData.serviceType,
+                    franchiseeId: user.FranchiseeID || 1,
+                    employeeId: user.EmployeeID || 9,
+                    isAssociate: true,
+                    AssociateID: user.id || null,
+                    sourceOfSale: "Associate",
+                    StateService: formData.serviceState
+                };
+                console.log("Creation Payload:", payload);
                 const response = await DealsApi.convertToDeal(payload);
                 if (response.success) { onSuccess?.(); onClose(); } else setErrors({ api: response.message || "Failed to create deal" });
             }
