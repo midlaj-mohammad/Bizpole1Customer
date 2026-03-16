@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useContext } from "react";
-import { FaShoppingCart, FaTimes } from "react-icons/fa";
+import React, { useState, useContext } from "react";
+import { FaTimes } from "react-icons/fa";
 import { CartContext } from "../../context/CartContext";
 import { upsertQuote } from "../../api/Quote";
 import { getSecureItem } from "../../utils/secureStorage";

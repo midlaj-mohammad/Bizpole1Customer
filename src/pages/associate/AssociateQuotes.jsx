@@ -8,7 +8,6 @@ import axiosInstance from '../../api/axiosInstance';
 import DealsApi from '../../api/DealsApi';
 import AddDealModal from '../../components/Modals/AddDealModal';
 import CryptoJS from "crypto-js";
-import { useParams } from "react-router-dom";
 
 
 

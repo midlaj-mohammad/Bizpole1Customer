@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, Users, FileText, MapPin, User, Video, Phone, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
-import { EVENT_TYPES, MEETING_TYPES } from './constants';
+import { X, Clock, Users, FileText, User, Calendar as CalendarIcon } from 'lucide-react';
+import { EVENT_TYPES } from './constants';
 import { format } from 'date-fns';
 
 export const EventDetailsModal = ({ selectedEvent, setSelectedEvent, handleDeleteEvent }) => {

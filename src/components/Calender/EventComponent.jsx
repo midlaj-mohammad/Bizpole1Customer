@@ -1,8 +1,8 @@
 // src/components/Calendar/EventComponent.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Users, FileText, User, Calendar as CalendarIcon, MapPin, Video, Phone } from 'lucide-react';
-import { EVENT_TYPES, MEETING_TYPES } from './constants';
+import { Clock, MapPin, Video, Phone } from 'lucide-react';
+import { MEETING_TYPES } from './constants';
 import { format } from 'date-fns';
 
 const EventComponent = ({ event }) => {

@@ -1,4 +1,3 @@
-import axiosInstance from "./axiosInstance";
 
 // Alternative API implementation
 // const fetchCountryCodes = async () => {

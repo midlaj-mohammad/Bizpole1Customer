@@ -5,7 +5,7 @@ import {
     ListChecks, FileStack, LayoutDashboard, Target,
     Package, PieChart, Download, Eye,
 } from 'lucide-react';
-import { getServiceDetailById, getServiceDeliverablesByServiceDetailId, getServiceTasks, serviceFormMapping, getResponseFields } from '../../api/Services/ServiceDetails';
+import { getServiceDetailById, getServiceDeliverablesByServiceDetailId, serviceFormMapping, getResponseFields } from '../../api/Services/ServiceDetails';
 import { format } from 'date-fns';
 import { getSecureItem } from '../../utils/secureStorage';
 import jsPDF from 'jspdf';
