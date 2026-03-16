@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Loader2, ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
 import { getSecureItem } from '../../utils/secureStorage';
 import { format } from 'date-fns';
@@ -20,9 +20,8 @@ const AssociateReceipts = () => {
     const [selectedReceipt, setSelectedReceipt] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
 
-    const navigate = useNavigate();
 
-    const fetchReceipts = async () => {
+    const fetchReceipts = useCallback(async () => {
         setLoading(true);
         try {
             const user = getSecureItem("partnerUser") || {};
@@ -36,9 +35,6 @@ const AssociateReceipts = () => {
                 search: searchTerm,
             });
 
-            console.log("responseLL", response);
-
-
             if (response.success) {
                 setReceipts(response.data);
                 setTotalReceipts(response.total);
@@ -48,11 +44,11 @@ const AssociateReceipts = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, searchTerm]);
 
     useEffect(() => {
         fetchReceipts();
-    }, [currentPage]);
+    }, [currentPage, searchTerm]);
 
     const handleSearch = (e) => {
         if (e.key === 'Enter') {

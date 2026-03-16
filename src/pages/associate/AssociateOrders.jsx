@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Loader2, Eye, FileText, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Filter, Loader2, ChevronLeft, ChevronRight, } from 'lucide-react';
 import { getSecureItem } from '../../utils/secureStorage';
 import { format, differenceInDays } from 'date-fns';
 import { initPayment, listOrders } from '../../api/Orders/Order';
@@ -17,7 +17,7 @@ const AssociateOrders = () => {
 
     const navigate = useNavigate();
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         setLoading(true);
         try {
             const user = getSecureItem("partnerUser") || {};
@@ -33,7 +33,6 @@ const AssociateOrders = () => {
 
             console.log("response", response);
 
-
             if (response.success) {
                 setOrders(response.data);
                 setTotalOrders(response.total);
@@ -43,11 +42,11 @@ const AssociateOrders = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, searchTerm]);
 
     useEffect(() => {
         fetchOrders();
-    }, [currentPage]);
+    }, [fetchOrders]);
 
     const handleSearch = (e) => {
         if (e.key === 'Enter') {
@@ -216,7 +215,7 @@ const AssociateOrders = () => {
                                 orders.map((order, index) => {
                                     console.log("sss", order.PendingAmount);
 
-                                    const fees = calculateFees(order.ServiceDetails);
+                                    // const fees = calculateFees(order.ServiceDetails);
                                     const pendingAmount = Number(order.PendingAmount || 0);
 
                                     return (

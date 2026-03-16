@@ -152,7 +152,7 @@ export default function ServiceSelection() {
           }
         })
         .catch((err) => {
-          setCompanyServicesError("Failed to fetch company services.");
+          setCompanyServicesError("Failed to fetch company services.", err);
           setLoadingCompanyServices(false);
         });
     } else {
@@ -182,7 +182,7 @@ export default function ServiceSelection() {
           setLoadingTasks(false);
         })
         .catch((err) => {
-          setTasksError("Failed to fetch tasks from /Task API.");
+          setTasksError("Failed to fetch tasks from /Task API.", err);
           setLoadingTasks(false);
         });
     } else if (activeTab === "Task") {
@@ -190,36 +190,36 @@ export default function ServiceSelection() {
     }
   }, [activeTab, selectedService]);
   // Fix selectedCompany in localStorage if it is not valid JSON
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Approved":
-        return "bg-green-100 text-green-700";
-      case "In review":
-        return "bg-yellow-100 text-yellow-700";
-      case "Not Approved":
-        return "bg-red-100 text-red-700";
-      case "Disable":
-        return "bg-gray-100 text-gray-500";
-      default:
-        return "bg-gray-100 text-gray-600";
-    }
-  };
+  // const getStatusColor = (status) => {
+  //   switch (status) {
+  //     case "Approved":
+  //       return "bg-green-100 text-green-700";
+  //     case "In review":
+  //       return "bg-yellow-100 text-yellow-700";
+  //     case "Not Approved":
+  //       return "bg-red-100 text-red-700";
+  //     case "Disable":
+  //       return "bg-gray-100 text-gray-500";
+  //     default:
+  //       return "bg-gray-100 text-gray-600";
+  //   }
+  // };
 
-  const getProgressBarColor = (progress) => {
-    if (progress >= 80) return "bg-green-400";
-    if (progress >= 60) return "bg-yellow-400";
-    if (progress >= 40) return "bg-orange-400";
-    return "bg-red-400";
-  };
+  // const getProgressBarColor = (progress) => {
+  //   if (progress >= 80) return "bg-green-400";
+  //   if (progress >= 60) return "bg-yellow-400";
+  //   if (progress >= 40) return "bg-orange-400";
+  //   return "bg-red-400";
+  // };
 
-  const filteredCurrentTasks =
-    statusFilter === "All"
-      ? currentTasks
-      : currentTasks.filter((task) => task.status === statusFilter);
-  const filteredUpcomingTasks =
-    statusFilter === "All"
-      ? upcomingTasks
-      : upcomingTasks.filter((task) => task.status === statusFilter);
+  // const filteredCurrentTasks =
+  //   statusFilter === "All"
+  //     ? currentTasks
+  //     : currentTasks.filter((task) => task.status === statusFilter);
+  // const filteredUpcomingTasks =
+  //   statusFilter === "All"
+  //     ? upcomingTasks
+  //     : upcomingTasks.filter((task) => task.status === statusFilter);
 
   // Fetch service form mapping when Documents tab is active and service is selected
   useEffect(() => {
@@ -321,6 +321,7 @@ export default function ServiceSelection() {
           else if (Array.isArray(res)) setFormConfig(res);
         })
         .catch((err) => {
+          console.log(err);
           // Optionally handle error
           setFormConfig([]);
         });
@@ -520,7 +521,6 @@ export default function ServiceSelection() {
 
   // Form for adding a note when not approved
   const NoteForm = ({ task, onBack }) => {
-    const [showReAddForm, setShowReAddForm] = useState(false);
     const [form, setForm] = useState({
       name: "",
       description: "",
@@ -737,7 +737,7 @@ export default function ServiceSelection() {
                 <p className="text-sm text-gray-600 mb-2">Payment Due</p>
                 <p className="text-lg font-semibold text-gray-800">
                   {tasksFromApi.summary.paymentDue !== undefined &&
-                  tasksFromApi.summary.paymentDue !== null
+                    tasksFromApi.summary.paymentDue !== null
                     ? `₹${tasksFromApi.summary.paymentDue}`
                     : "-"}
                 </p>
@@ -772,7 +772,7 @@ export default function ServiceSelection() {
                 <p className="text-sm text-gray-600 mb-2">Payment Due</p>
                 <p className="text-lg font-semibold text-gray-800">
                   {tasksFromApi[0].paymentDue !== undefined &&
-                  tasksFromApi[0].paymentDue !== null
+                    tasksFromApi[0].paymentDue !== null
                     ? `₹${tasksFromApi[0].paymentDue}`
                     : "-"}
                 </p>
@@ -798,11 +798,10 @@ export default function ServiceSelection() {
                   setCollectDataTask(null);
                   setNoteTask(null);
                 }}
-                className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab && !collectDataTask && !noteTask
-                    ? "border-yellow-400 text-yellow-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                className={`pb-3 px-1 border-b-2 font-medium text-sm ${activeTab === tab && !collectDataTask && !noteTask
+                  ? "border-yellow-400 text-yellow-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 {tab}
               </button>

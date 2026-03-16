@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, Loader2, Eye, Phone, PhoneOff, Tag, FileText, CheckCircle, Users, Building2, Search, MapPin, Mail, Globe, Languages, Calendar, Hash, Briefcase } from "lucide-react";
+import { X, ChevronDown, Loader2, Eye, Phone, Tag, FileText, CheckCircle, Users, Building2, Search, MapPin, Mail, Globe, Languages, Calendar, Hash, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import locationData from "../../utils/statesAndDistricts.json";
 import DealsApi from "../../api/DealsApi";
@@ -242,7 +242,6 @@ const ServiceDetailsPopup = ({ category, services, onClose }) => {
 
 // ── Main Modal ──────────────────────────────────────────────────────────────
 const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) => {
-    const navigate = useNavigate();
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [availableDistricts, setAvailableDistricts] = useState([]);
@@ -336,7 +335,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
                 const d = await r.json();
                 if (d.success) setAssociateCustomersForCompany(d.data || []);
             }
-        } catch (err) { setAssociateCustomersForCompany([]); }
+        } catch (err) { setAssociateCustomersForCompany([]); console.log(err) }
         finally { setIsFetchingCustomers(false); }
     };
 
@@ -647,7 +646,7 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
         setIsSubmitting(true);
         try {
             const user = getSecureItem("partnerUser") || {};
-            const selectedState = availableStates.find((s) => s.state_name === formData.serviceState);
+            // const selectedState = availableStates.find((s) => s.state_name === formData.serviceState);
             const selectedCategory = serviceCategories.find(c => c.CategoryID === parseInt(formData.serviceCategory));
             let servicesPayload = [];
             if (formData.serviceType === "individual") {
