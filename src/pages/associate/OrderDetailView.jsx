@@ -33,7 +33,7 @@ const OrderDetailView = () => {
 
     const tabs = [
         { name: 'Summary', icon: LayoutDashboard },
-        // { name: 'Services', icon: ListChecks },
+        { name: 'Services', icon: ListChecks },
         // { name: 'Files', icon: FolderOpen },
         { name: 'Receipts', icon: Receipt },
         { name: 'Invoice', icon: FileStack },
@@ -375,29 +375,34 @@ const OrderDetailView = () => {
                                     <ListChecks className="w-4 h-4 text-[#4b49ac]" />
                                     Service Summary ({order.ServiceDetails?.length || 0})
                                 </h3>
-                                <button className="text-[10px] font-bold text-[#4b49ac] hover:underline">VIEW ALL SERVICES</button>
+                                {/* <button className="text-[10px] font-bold text-[#4b49ac] hover:underline">VIEW ALL SERVICES</button> */}
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse text-[11px]">
                                     <thead>
                                         <tr className="bg-slate-50/50 border-b border-slate-100 uppercase tracking-tighter font-bold text-slate-400">
                                             <th className="px-6 py-3">Service Name</th>
-                                            <th className="px-6 py-3">Category</th>
-                                            <th className="px-6 py-3 text-right">Total Price</th>
+                                            <th className="px-6 py-3 text-right">Total Amount</th>
+                                            <th className="px-6 py-3 text-right">Advance Amount</th>
+                                            <th className="px-6 py-3 text-right">Pending Amount</th>
                                             <th className="px-6 py-3">Status</th>
-                                            <th className="px-6 py-3">TAT Days</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50 text-[12px]">
                                         {(order.ServiceDetails || []).map((service, idx) => (
                                             <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
                                                 <td className="px-6 py-4 font-semibold text-slate-700">{service.ServiceName}</td>
-                                                <td className="px-6 py-4 text-slate-500 italic">{service.ServiceCategory || '--'}</td>
-                                                <td className="px-6 py-4 text-right font-bold text-slate-700">₹{(service.Total || 0).toLocaleString()}</td>
-                                                <td className="px-6 py-4 text-slate-500 uppercase font-black text-[9px]">
-                                                    <span className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full">{service.ServiceStatus || 'pending'}</span>
+                                                <td className="px-6 py-4 text-right font-bold text-slate-700">₹{parseFloat(service.Total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-6 py-4 text-right text-slate-600 font-medium">₹{parseFloat(service.AdvanceAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-6 py-4 text-right text-red-600 font-bold">₹{parseFloat(service.PendingAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-6 py-4 font-black text-[9px]">
+                                                    <span className={`px-2 py-1 rounded-full uppercase ${service.StatusRemark === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                                                        service.StatusRemark === 'In Progress' ? 'bg-blue-50 text-blue-600' :
+                                                            'bg-slate-100 text-slate-500'
+                                                        }`}>
+                                                        {service.StatusRemark || 'pending'}
+                                                    </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-slate-400">{service.TotalTAT || 0} Days</td>
                                             </tr>
                                         ))}
                                     </tbody>

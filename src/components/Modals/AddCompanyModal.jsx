@@ -144,6 +144,8 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     const [activeTab, setActiveTab] = useState("company");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCustomerSearch, setShowCustomerSearch] = useState(false);
+    const [existingCompany, setExistingCompany] = useState(null);
+    const [isCheckingName, setIsCheckingName] = useState(false);
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     const [companyData, setCompanyData] = useState({
@@ -240,6 +242,31 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
             ]);
         }
     }, [isOpen, initialData]);
+
+    useEffect(() => {
+        if (!companyData.name || companyData.CompanyID) {
+            setExistingCompany(null);
+            return;
+        }
+
+        const delayDebounce = setTimeout(async () => {
+            setIsCheckingName(true);
+            try {
+                const result = await DealsApi.checkCompanyExistence(companyData.name);
+                if (result.success && result.exists) {
+                    setExistingCompany(result.company);
+                } else {
+                    setExistingCompany(null);
+                }
+            } catch (err) {
+                console.error("Error checking company existence:", err);
+            } finally {
+                setIsCheckingName(false);
+            }
+        }, 600);
+
+        return () => clearTimeout(delayDebounce);
+    }, [companyData.name, companyData.CompanyID]);
 
     const handleCompanyChange = (e) => {
         const { name, value } = e.target;
@@ -448,10 +475,32 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                                 name="name"
                                                 value={companyData.name}
                                                 onChange={handleCompanyChange}
-                                                className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                                className={`w-full pl-12 pr-4 py-4 bg-white border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all ${
+                                                    existingCompany ? "border-amber-400 bg-amber-50/10" : "border-gray-200"
+                                                }`}
                                                 placeholder="Enter company name"
                                             />
+                                            {isCheckingName && (
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                    <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                                                </div>
+                                            )}
                                         </div>
+                                        <AnimatePresence>
+                                            {existingCompany && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: "auto" }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <p className="text-xs font-medium text-amber-600 flex items-center gap-1.5 mt-2 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                                                        <Search className="w-3 h-3" />
+                                                        A company with this name already exists (ID: {existingCompany.CompanyCode || existingCompany.CompanyID})
+                                                    </p>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
 
                                     <div className="space-y-2">
