@@ -160,4 +160,13 @@ export default {
     requestQuote,
     updateDeal,
     deleteDeal,
+    checkCompanyExistence: async (name) => {
+        try {
+            const response = await axiosInstance.post("/company/check-existence", { name });
+            return response.data;
+        } catch (error) {
+            console.error("Error checking company existence:", error);
+            throw error;
+        }
+    }
 };
