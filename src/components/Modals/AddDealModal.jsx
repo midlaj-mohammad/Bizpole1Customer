@@ -282,6 +282,8 @@ const AddDealModal = ({ isOpen = true, onClose, onSuccess, deal, initialData }) 
     const [categoryServicesCache, setCategoryServicesCache] = useState({});
 
 
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
     useEffect(() => {
         if (formData.state) {
             const s = locationData.states.find((s) => s.stateName === formData.state);

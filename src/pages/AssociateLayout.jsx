@@ -12,6 +12,10 @@ import {
     Search,
     Bell,
     Receipt,
+    ChevronRight,
+    ChevronLeft,
+    HelpCircle,
+    Building2
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { getSecureItem } from '../utils/secureStorage';
@@ -23,6 +27,7 @@ const AssociateLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const user = getSecureItem("partnerUser") || { username: "Associate" };
 
     const handleLogoutClick = () => {
@@ -44,7 +49,7 @@ const AssociateLayout = () => {
         { id: 'orders', path: '/associate/orders', icon: <ShoppingCart className="w-5 h-5" />, label: 'Orders' },
         { id: 'services', path: '/associate/services', icon: <Briefcase className="w-5 h-5" />, label: 'Services' },
         { id: 'customers', path: '/associate/customers', icon: <Users className="w-5 h-5" />, label: 'Customers' },
-        { id: 'companies', path: '/associate/companies', icon: <Briefcase className="w-5 h-5" />, label: 'Companies' },
+        { id: 'companies', path: '/associate/companies', icon: <Building2 className="w-5 h-5" />, label: 'Companies' },
         { id: 'receipts', path: '/associate/receipts', icon: <Receipt className="w-5 h-5" />, label: 'Receipts' },
         { id: 'explore-services', path: '/associate/explore-services', icon: <FileText className="w-5 h-5" />, label: 'Explore' },
         // { id: 'invoices', path: '/associate/invoices', icon: <FileSpreadsheet className="w-5 h-5" />, label: 'Invoices' },
@@ -71,48 +76,113 @@ const AssociateLayout = () => {
         <div className="flex h-screen bg-[#f8fafc]">
             <ToastContainer position="top-right" autoClose={3000} />
             {/* Sidebar */}
-            <aside className="w-64 bg-[#0f172a] text-white flex flex-col">
-                <div className="p-6 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center font-bold text-black text-xl italic">B</div>
-                    <span className="text-xl font-bold tracking-tight">Bizpole</span>
+            <motion.aside
+                animate={{ width: isCollapsed ? 80 : 256 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="bg-[#111111] text-white flex flex-col relative z-20 shadow-xl"
+            >
+                {/* Toggle Button */}
+                <button
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="absolute -right-3 top-10 w-6 h-6 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors z-30"
+                >
+                    {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                </button>
+
+                <div className={`p-6 flex flex-col items-center gap-4 overflow-hidden`}>
+                    <div className="flex items-center gap-3 w-full justify-start">
+                        <div className="min-w-[40px] w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center font-bold text-black text-xl italic flex-shrink-0">B</div>
+                        {!isCollapsed && (
+                            <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="text-xl font-bold tracking-tight whitespace-nowrap"
+                            >
+                                Bizpole
+                            </motion.span>
+                        )}
+                    </div>
+                    <div className="w-full border-t border-white/10" />
                 </div>
 
-                <nav className="flex-1 px-4 py-4 space-y-1">
+                <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto no-scrollbar">
                     {sidebarItems.map((item) => (
                         <button
                             key={item.id}
                             onClick={() => navigate(item.path)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive(item.path)
+                            title={isCollapsed ? item.label : ""}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isCollapsed ? 'justify-center' : ''} ${isActive(item.path)
                                 ? 'bg-yellow-400/10 text-yellow-400 font-semibold'
                                 : 'text-slate-400 hover:bg-white/5 hover:text-white'
                                 }`}
                         >
-                            {item.icon}
-                            <span>{item.label}</span>
+                            <div className="flex-shrink-0">{item.icon}</div>
+                            {!isCollapsed && (
+                                <motion.span
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="whitespace-nowrap"
+                                >
+                                    {item.label}
+                                </motion.span>
+                            )}
                         </button>
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-slate-800 space-y-1">
+                <div className={`p-4 border-t border-slate-800 space-y-1 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
                     <button
                         onClick={() => navigate('/associate/profile')}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/associate/profile')
+                        title={isCollapsed ? "Profile" : ""}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isCollapsed ? 'justify-center' : ''} ${isActive('/associate/profile')
                             ? 'bg-yellow-400/10 text-yellow-400 font-semibold'
                             : 'text-slate-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <User className="w-5 h-5" />
-                        <span>Profile</span>
+                        <User className="w-5 h-5 flex-shrink-0" />
+                        {!isCollapsed && (
+                            <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="whitespace-nowrap"
+                            >
+                                Profile
+                            </motion.span>
+                        )}
+                    </button>
+                    <button
+                        title={isCollapsed ? "Help" : ""}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-white/5 hover:text-white ${isCollapsed ? 'justify-center' : ''}`}
+                    >
+                        <HelpCircle className="w-5 h-5 flex-shrink-0" />
+                        {!isCollapsed && (
+                            <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="whitespace-nowrap"
+                            >
+                                Help
+                            </motion.span>
+                        )}
                     </button>
                     <button
                         onClick={handleLogoutClick}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-400/10 rounded-xl transition-all"
+                        title={isCollapsed ? "Logout" : ""}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-400/10 rounded-xl transition-all ${isCollapsed ? 'justify-center' : ''}`}
                     >
-                        <LogOut className="w-5 h-5" />
-                        <span>Logout</span>
+                        <LogOut className="w-5 h-5 flex-shrink-0" />
+                        {!isCollapsed && (
+                            <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="whitespace-nowrap"
+                            >
+                                Logout
+                            </motion.span>
+                        )}
                     </button>
                 </div>
-            </aside>
+            </motion.aside>
 
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto">
