@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    ChevronLeft, Loader2, FileText, AlertCircle, CheckCircle2,
-    ListChecks, FileStack, LayoutDashboard, History, Target,
-    Package, PieChart, Download, Eye, Activity
+    ChevronLeft, Loader2, FileText, AlertCircle,
+    ListChecks, FileStack, LayoutDashboard, Target,
+    Package, PieChart, Download, Eye,
 } from 'lucide-react';
-import { getServiceDetailById, getServiceDeliverablesByServiceDetailId, getServiceTasks, serviceFormMapping, serviceFormSave, getResponseFields } from '../../api/Services/ServiceDetails';
+import { getServiceDetailById, getServiceDeliverablesByServiceDetailId, serviceFormMapping, getResponseFields } from '../../api/Services/ServiceDetails';
 import { format } from 'date-fns';
 import { getSecureItem } from '../../utils/secureStorage';
 import jsPDF from 'jspdf';
@@ -25,12 +25,12 @@ const ServiceDetailView = () => {
     const [deliverables, setDeliverables] = useState([]);
     const [deliverablesLoading, setDeliverablesLoading] = useState(false);
 
-    const [tasks, setTasks] = useState([]);
-    const [tasksLoading, setTasksLoading] = useState(false);
+    // const [tasks, setTasks] = useState([]);
+    // const [tasksLoading, setTasksLoading] = useState(false);
 
     // formConfig & its loading state live here, passed as props to DocumentCollectionTab
     const [formConfig, setFormConfig] = useState(null);
-    const [formConfigLoading, setFormConfigLoading] = useState(false);
+    // const [formConfigLoading, setFormConfigLoading] = useState(false);
 
     const [responseFields, setResponseFields] = useState([]);
     const [responseFieldsLoading, setResponseFieldsLoading] = useState(false);
@@ -83,7 +83,7 @@ const ServiceDetailView = () => {
                     setService(response);
 
                     if (response.ServiceID) {
-                        setFormConfigLoading(true);
+                        // setFormConfigLoading(true);
                         try {
                             const serviceRes = await serviceFormMapping(response.ServiceID);
                             // Handle both { data: [...] } and plain array responses
@@ -95,7 +95,7 @@ const ServiceDetailView = () => {
                         } catch (formErr) {
                             console.error("serviceFormMapping error", formErr);
                         } finally {
-                            setFormConfigLoading(false);
+                            // setFormConfigLoading(false);
                         }
                     }
                 }
@@ -129,27 +129,27 @@ const ServiceDetailView = () => {
 
 
     // ── Fetch tasks (on tab switch) ──────────────────────────────────────────
-    useEffect(() => {
-        const fetchTasks = async () => {
-            if (activeTab !== 'Task Progress' || !id) return;
-            setTasksLoading(true);
-            try {
-                const user = getSecureItem("partnerUser") || {};
-                const response = await getServiceTasks({
-                    franchiseId: 1,
-                    page: 1,
-                    limit: 10,
-                    serviceDetailsId: id,
-                });
-                if (response.success) setTasks(response.data || []);
-            } catch (error) {
-                console.error("Error fetching tasks:", error);
-            } finally {
-                setTasksLoading(false);
-            }
-        };
-        fetchTasks();
-    }, [activeTab, id]);
+    // useEffect(() => {
+    //     const fetchTasks = async () => {
+    //         if (activeTab !== 'Task Progress' || !id) return;
+    //         setTasksLoading(true);
+    //         try {
+    //             // const user = getSecureItem("partnerUser") || {};
+    //             const response = await getServiceTasks({
+    //                 franchiseId: 1,
+    //                 page: 1,
+    //                 limit: 10,
+    //                 serviceDetailsId: id,
+    //             });
+    //             if (response.success) setTasks(response.data || []);
+    //         } catch (error) {
+    //             console.error("Error fetching tasks:", error);
+    //         } finally {
+    //             setTasksLoading(false);
+    //         }
+    //     };
+    //     fetchTasks();
+    // }, [activeTab, id]);
 
     // ── Fetch Response Fields (on tab switch) ───────────────────────────────
     useEffect(() => {
@@ -263,16 +263,16 @@ const ServiceDetailView = () => {
 
                         <InfoCard icon={<PieChart className="w-4 h-4" />} title="Activity Collectables and Deliverables">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
-                                <PriceItem label="Contractor Fee" value={service.ContractorFee || 0} />
-                                <PriceItem label="Professional Fee" value={service.ProfessionalFee || service.ProfFee || 0} />
+                                {/* <PriceItem label="Contractor Fee" value={service.ContractorFee || 0} /> */}
+                                {/* <PriceItem label="Professional Fee" value={service.ProfessionalFee || service.ProfFee || 0} />
                                 <PriceItem label="Vendor Fee" value={service.VendorFee || 0} />
                                 <PriceItem label="Govt. Fee" value={service.GovtFee || 0} />
                                 <PriceItem label="GST" value={service.GstAmount || service.GST || 0} />
                                 <PriceItem label="CGST %" value={`${service.CGST || '9'}%`} isPercent />
                                 <PriceItem label="SGST %" value={`${service.SGST || '9'}%`} isPercent />
-                                <PriceItem label="IGST %" value={`${service.IGST || '0.00'}%`} isPercent />
+                                <PriceItem label="IGST %" value={`${service.IGST || '0.00'}%`} isPercent /> */}
                                 <PriceItem label="Discount Received" value={service.Discount || 0} />
-                                <PriceItem label="Rounding" value={service.Rounding || 0} />
+                                {/* <PriceItem label="Rounding" value={service.Rounding || 0} /> */}
                                 <PriceItem label="Total Service Value" value={service.Total || 0} isTotal />
                             </div>
                         </InfoCard>

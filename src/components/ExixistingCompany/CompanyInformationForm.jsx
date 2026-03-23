@@ -210,14 +210,14 @@ const CompanyInformationForm = ({ onNext }) => {
   // Enhanced assignCustomer function with debouncing
   const handleAssignBlur = () => {
     const { preferredLanguage, commState, commCity } = form;
-    
+
     // Validate required fields for assignment
     if (!preferredLanguage || !commState || !commCity) {
-      setForm((prev) => ({ 
-        ...prev, 
-        employeeId: "", 
-        agentName: "", 
-        franchiseeId: "" 
+      setForm((prev) => ({
+        ...prev,
+        employeeId: "",
+        agentName: "",
+        franchiseeId: ""
       }));
       setAssignError("Please select Language, State, and City to assign an agent.");
       return;
@@ -241,22 +241,22 @@ const CompanyInformationForm = ({ onNext }) => {
           }));
           setAssignError("");
         } else {
-          setForm((prev) => ({ 
-            ...prev, 
-            employeeId: "", 
-            agentName: "", 
-            franchiseeId: "" 
+          setForm((prev) => ({
+            ...prev,
+            employeeId: "",
+            agentName: "",
+            franchiseeId: ""
           }));
           setAssignError("No agent/franchisee found for the selected criteria.");
         }
       })
       .catch((err) => {
         console.error("Error assigning customer:", err);
-        setForm((prev) => ({ 
-          ...prev, 
-          employeeId: "", 
-          agentName: "", 
-          franchiseeId: "" 
+        setForm((prev) => ({
+          ...prev,
+          employeeId: "",
+          agentName: "",
+          franchiseeId: ""
         }));
         setAssignError("Could not assign agent/franchisee. Please try again.");
       })
@@ -266,9 +266,9 @@ const CompanyInformationForm = ({ onNext }) => {
   };
 
   const handleRadio = (name, value) => {
-    setForm((prev) => ({ 
-      ...prev, 
-      [name]: value 
+    setForm((prev) => ({
+      ...prev,
+      [name]: value
     }));
   };
 
@@ -407,7 +407,7 @@ const CompanyInformationForm = ({ onNext }) => {
 
       // Save to secure storage
       await setSecureItem("companyInfo", JSON.stringify(payload));
-      
+
       // Call onNext callback if provided
       if (onNext) {
         onNext();

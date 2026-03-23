@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AddDealModal from '../../components/Modals/AddDealModal';
-import { Plus, Edit2, Trash2, Search, Filter, Loader2, MoreVertical, ExternalLink } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Filter, Loader2, } from 'lucide-react';
 import DealsApi from '../../api/DealsApi';
 import { getSecureItem } from '../../utils/secureStorage';
 import { format } from 'date-fns';
 import axiosInstance from '../../api/axiosInstance';
-import { upsertQuote } from '../../api/Quote';
 
 const getDealDataFromParams = (search) => {
     try {
@@ -51,7 +50,7 @@ const AssociateDeals = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [creatingQuote, setCreatingQuote] = useState(null); // Track which deal is being converted
     const [editingDeal, setEditingDeal] = useState(null); // Track which deal is being edited
-    const [deletingDeal, setDeletingDeal] = useState(null); // Track which deal is being deleted
+    // const [deletingDeal, setDeletingDeal] = useState(null); // Track which deal is being deleted
     const [companyNames, setCompanyNames] = useState({});
     const [existingQuoteDealIds, setExistingQuoteDealIds] = useState([]);
 
@@ -69,9 +68,50 @@ const AssociateDeals = () => {
     }, [location.search]);
 
 
+    const fetchDeals = useCallback(async () => {
+        setLoading(true);
+        try {
+            const user = getSecureItem("partnerUser") || {};
+            const result = await DealsApi.listDeals({
+                employeeId: user.EmployeeID,
+                franchiseId: user.FranchiseeID,
+                isAssociate: true,
+                AssociateID: user.id || null
+            });
+
+            const AssociateID = user.id || localStorage.getItem("AssociateID");
+
+            const quotesResponse = await axiosInstance.post('/getLatestQuotes', {
+                AssociateID: AssociateID,
+                isAssociate: true
+            });
+
+            const quoteDealIds = (quotesResponse.data?.data || [])
+                .map(q => q.DealID)
+                .filter(Boolean);
+
+            setExistingQuoteDealIds(quoteDealIds);
+
+            if (result.success) {
+                const dealsData = result.data || [];
+                setDeals(dealsData);
+                fetchCompanyNames(dealsData);
+            } else {
+                setError(result.message || "Failed to fetch deals");
+            }
+
+        } catch (err) {
+            console.error("fetchDeals error", err);
+            setError("An error occurred while fetching deals");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+
     useEffect(() => {
         fetchDeals();
-    }, []);
+    }, [fetchDeals]);
 
 
     const fetchCompanyNames = async (dealsList) => {
@@ -98,42 +138,7 @@ const AssociateDeals = () => {
 
 
 
-    const fetchDeals = async () => {
-        setLoading(true);
-        try {
-            const user = getSecureItem("partnerUser") || {};
-            const result = await DealsApi.listDeals({
-                employeeId: user.EmployeeID,
-                franchiseId: user.FranchiseeID,
-                isAssociate: true, // Filter specifically for associate created deals
-                AssociateID: user.id || null
-            });
 
-            // Fetch quotes to check for existing quotes
-            const AssociateID = user.id || localStorage.getItem("AssociateID");
-            const quotesResponse = await axiosInstance.post('/getLatestQuotes', {
-                AssociateID: AssociateID,
-                isAssociate: true
-            });
-            const quoteDealIds = (quotesResponse.data?.data || []).map(q => q.DealID).filter(Boolean);
-            setExistingQuoteDealIds(quoteDealIds);
-
-            if (result.success) {
-                const dealsData = result.data || [];
-                console.log({ dealsData });
-
-                setDeals(dealsData);
-                fetchCompanyNames(dealsData);
-            } else {
-                setError(result.message || "Failed to fetch deals");
-            }
-        } catch (err) {
-            console.error("fetchDeals error", err);
-            setError("An error occurred while fetching deals");
-        } finally {
-            setLoading(false);
-        }
-    }
 
     const handleDealSuccess = () => {
         fetchDeals();
@@ -296,16 +301,15 @@ const AssociateDeals = () => {
                                                 {index + 1}
                                             </td>
 
-                                            <td className="px-6 py-4 text-sm text-slate-400 font-mono tracking-tight">
+                                            <td onClick={() => navigate(`/associate/deals/${deal.id}`)} className=" cursor-pointer hover:text-blue-600 transition-colors px-6 py-4 text-sm text-blue-400 font-mono tracking-tight">
                                                 {deal.DealCode || "--"}
                                             </td>
 
                                             <td className="px-6 py-4">
                                                 <div
-                                                    className="flex items-center gap-2 cursor-pointer"
-                                                    onClick={() => navigate(`/associate/deals/${deal.id}`)}
+                                                    className="flex items-center gap-2 "
                                                 >
-                                                    <span className="text-sm font-bold text-slate-900 hover:text-[#4b49ac] transition-colors">
+                                                    <span className="text-sm font-bold text-slate-900 ">
                                                         {deal.name}
                                                     </span>
                                                 </div>
@@ -370,38 +374,44 @@ const AssociateDeals = () => {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-end gap-2">
                                                     {!existingQuoteDealIds.includes(deal.id) ? (
-                                                        <button
-                                                            onClick={() => handleCreateQuote(deal)}
-                                                            disabled={creatingQuote === deal.id || deal.associate_request === 1}
-                                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-1.5 ${deal.associate_request === 1
-                                                                ? "bg-slate-100 text-slate-500"
-                                                                : "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                                                                }`}
-                                                        >
-                                                            {creatingQuote === deal.id ? (
-                                                                <>
-                                                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                                                    Requesting...
-                                                                </>
-                                                            ) : (
-                                                                deal.associate_request === 1 ? "Requested" : "Request Quote"
-                                                            )}
-                                                        </button>
-                                                    ) : <div className='px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-1.5 bg-slate-100 text-slate-400'>Created</div>}
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleCreateQuote(deal)}
+                                                                disabled={creatingQuote === deal.id || deal.associate_request === 1}
+                                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-1.5 ${deal.associate_request === 1
+                                                                    ? "bg-slate-100 text-slate-500"
+                                                                    : "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                                                                    }`}
+                                                            >
+                                                                {creatingQuote === deal.id ? (
+                                                                    <>
+                                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                                        Requesting...
+                                                                    </>
+                                                                ) : (
+                                                                    deal.associate_request === 1 ? "Requested" : "Request Quote"
+                                                                )}
+                                                            </button>
 
-                                                    <button
-                                                        onClick={() => handleEdit(deal)}
-                                                        className="p-2 text-slate-400 hover:text-[#4b49ac] hover:bg-slate-100 rounded-lg transition-all"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
+                                                            <button
+                                                                onClick={() => handleEdit(deal)}
+                                                                className="p-2 text-slate-400 hover:text-[#4b49ac] hover:bg-slate-100 rounded-lg transition-all"
+                                                            >
+                                                                <Edit2 className="w-4 h-4" />
+                                                            </button>
 
-                                                    <button
-                                                        onClick={() => handleDelete(deal)}
-                                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                            <button
+                                                                onClick={() => handleDelete(deal)}
+                                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <div className='px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-1.5 bg-slate-100 text-slate-400'>
+                                                            Created
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

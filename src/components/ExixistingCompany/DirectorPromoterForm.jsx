@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { upsertCompany } from "../../api/CompanyApi";
 import { getSecureItem } from "../../utils/secureStorage";
 
@@ -135,7 +135,7 @@ const DirectorPromoterForm = ({ onNext, onBack }) => {
     
     const newCount = Number(e.target.value);
     setCount(newCount);
-    
+
     setDirectors((prev) => {
       if (newCount > prev.length) {
         // Add new directors

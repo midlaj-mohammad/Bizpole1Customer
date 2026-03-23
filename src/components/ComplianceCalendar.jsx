@@ -90,7 +90,7 @@ const ComplianceCalendar = ({ value = 27.5, compliances = [], onComplianceClick 
   });
 
   // Needle angle based on animated value
-  const needleAngle = gaugeStart + valuePercent * gaugeRange;
+  // const needleAngle = gaugeStart + valuePercent * gaugeRange;
 
   // Format date helper
   const formatDate = (dateStr) => {
@@ -144,7 +144,7 @@ const ComplianceCalendar = ({ value = 27.5, compliances = [], onComplianceClick 
               // Find the last active segment (green or filled)
               const lastActive = segments.filter(s => s.isActive).slice(-1)[0];
               if (lastActive) {
-                const innerRadius = 0; // center
+                // const innerRadius = 0; // center
                 const outerRadius = 108; // same as segment outer
                 const angleRad = (lastActive.angle * Math.PI) / 180;
                 const x2 = 120 + outerRadius * Math.cos(angleRad);

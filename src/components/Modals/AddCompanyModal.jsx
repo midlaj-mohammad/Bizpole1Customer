@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, Loader2, Search, Building2, Users, Plus, Trash2, CheckCircle, Smartphone, Mail, MapPin, Globe } from "lucide-react";
+import { X, Loader2, Search, Building2, Users, Plus, Trash2, CheckCircle, Smartphone, Mail, Globe } from "lucide-react";
 import locationData from "../../utils/statesAndDistricts.json";
 import DealsApi from "../../api/DealsApi";
 import { getSecureItem } from "../../utils/secureStorage";
@@ -12,7 +12,6 @@ const ExistingEntityDropdown = ({ type, onSelect, onClose, apiUrl }) => {
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const dropdownRef = useRef(null);
-    const searchTimeout = useRef(null);
 
     const fetchEntities = useCallback(async (searchQuery) => {
         setIsLoading(true);
@@ -145,6 +144,8 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     const [activeTab, setActiveTab] = useState("company");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCustomerSearch, setShowCustomerSearch] = useState(false);
+    const [existingCompany, setExistingCompany] = useState(null);
+    const [isCheckingName, setIsCheckingName] = useState(false);
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     const [companyData, setCompanyData] = useState({
@@ -155,13 +156,15 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
         country: "India",
         state: "",
         district: "",
+        pincode: "",
         preferredLanguage: ""
     });
 
     const [customers, setCustomers] = useState([
         {
             id: Date.now(),
-            name: "",
+            firstName: "",
+            lastName: "",
             mobile: "",
             email: "",
             country: "India",
@@ -186,6 +189,7 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 country: initialData.Country || "India",
                 state: initialData.State || "",
                 district: initialData.District || initialData.City || "",
+                pincode: initialData.PinCode || "",
                 preferredLanguage: initialData.PreferredLanguage || ""
             });
 
@@ -193,7 +197,8 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 setCustomers(initialData.Customers.map(c => ({
                     id: c.CustomerID || Date.now() + Math.random(),
                     CustomerID: c.CustomerID,
-                    name: `${c.FirstName || ""} ${c.LastName || ""}`.trim() || c.CustomerName || "",
+                    firstName: c.FirstName || "",
+                    lastName: c.LastName || "",
                     mobile: c.Mobile || "",
                     email: c.Email || "",
                     country: c.Country || "India",
@@ -215,12 +220,14 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 country: "India",
                 state: "",
                 district: "",
+                pincode: "",
                 preferredLanguage: ""
             });
             setCustomers([
                 {
                     id: Date.now(),
-                    name: "",
+                    firstName: "",
+                    lastName: "",
                     mobile: "",
                     email: "",
                     country: "India",
@@ -236,6 +243,31 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
         }
     }, [isOpen, initialData]);
 
+    useEffect(() => {
+        if (!companyData.name || companyData.CompanyID) {
+            setExistingCompany(null);
+            return;
+        }
+
+        const delayDebounce = setTimeout(async () => {
+            setIsCheckingName(true);
+            try {
+                const result = await DealsApi.checkCompanyExistence(companyData.name);
+                if (result.success && result.exists) {
+                    setExistingCompany(result.company);
+                } else {
+                    setExistingCompany(null);
+                }
+            } catch (err) {
+                console.error("Error checking company existence:", err);
+            } finally {
+                setIsCheckingName(false);
+            }
+        }, 600);
+
+        return () => clearTimeout(delayDebounce);
+    }, [companyData.name, companyData.CompanyID]);
+
     const handleCompanyChange = (e) => {
         const { name, value } = e.target;
         setCompanyData(prev => ({ ...prev, [name]: value }));
@@ -250,7 +282,8 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
             ...prev,
             {
                 id: Date.now(),
-                name: "",
+                firstName: "",
+                lastName: "",
                 mobile: "",
                 email: "",
                 country: "India",
@@ -295,7 +328,8 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                     const updated = [...prev];
                     updated[0] = {
                         ...updated[0],
-                        name: fullData.CustomerName || `${fullData.FirstName} ${fullData.LastName}` || "",
+                        firstName: fullData.FirstName || "",
+                        lastName: fullData.LastName || "",
                         mobile: fullData.Mobile || "",
                         email: fullData.Email || "",
                         country: fullData.Country || "India",
@@ -321,7 +355,8 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
             const updated = [...prev];
             updated[0] = {
                 ...updated[0],
-                name: "",
+                firstName: "",
+                lastName: "",
                 mobile: "",
                 email: "",
                 country: "India",
@@ -332,7 +367,6 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 isExisting: false,
                 existingCustomerId: null
             };
-            return updated;
         });
     };
 
@@ -369,7 +403,7 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 toast.error(result.message || (companyData.CompanyID ? "Failed to update company" : "Failed to add company"));
             }
         } catch (err) {
-            toast.error("Error connecting to server");
+            toast.error("Error connecting to server", err);
         } finally {
             setIsSubmitting(false);
         }
@@ -441,10 +475,32 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                                 name="name"
                                                 value={companyData.name}
                                                 onChange={handleCompanyChange}
-                                                className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                                className={`w-full pl-12 pr-4 py-4 bg-white border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all ${
+                                                    existingCompany ? "border-amber-400 bg-amber-50/10" : "border-gray-200"
+                                                }`}
                                                 placeholder="Enter company name"
                                             />
+                                            {isCheckingName && (
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                    <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                                                </div>
+                                            )}
                                         </div>
+                                        <AnimatePresence>
+                                            {existingCompany && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: "auto" }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <p className="text-xs font-medium text-amber-600 flex items-center gap-1.5 mt-2 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                                                        <Search className="w-3 h-3" />
+                                                        A company with this name already exists (ID: {existingCompany.CompanyCode || existingCompany.CompanyID})
+                                                    </p>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
 
                                     <div className="space-y-2">
@@ -536,6 +592,18 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                         </select>
                                     </div>
 
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-500 uppercase tracking-tight">Pin Code</label>
+                                        <input
+                                            type="text"
+                                            name="pincode"
+                                            value={companyData.pincode}
+                                            onChange={handleCompanyChange}
+                                            className="w-full px-4 py-4 bg-white border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                            placeholder="Enter pin code"
+                                        />
+                                    </div>
+
                                     <div className="space-y-2 col-span-full">
                                         <label className="text-sm font-bold text-gray-500 uppercase tracking-tight">Company Preferred Language</label>
                                         <select
@@ -594,7 +662,7 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                     </div>
                                 </div>
 
-                                {customers.map((customer, index) => (
+                                {customers.map((customer) => (
                                     <motion.div
                                         key={customer.id}
                                         layout
@@ -629,15 +697,27 @@ const AddCompanyModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2 col-span-full">
-                                                <label className="text-sm font-semibold text-gray-500">Customer Name</label>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-gray-500">First Name</label>
                                                 <input
                                                     type="text"
-                                                    value={customer.name}
-                                                    onChange={(e) => handleCustomerChange(customer.id, "name", e.target.value)}
+                                                    value={customer.firstName}
+                                                    onChange={(e) => handleCustomerChange(customer.id, "firstName", e.target.value)}
                                                     disabled={customer.isExisting}
                                                     className="w-full px-4 py-4 bg-white border border-gray-200 rounded-2xl outline-none text-sm"
-                                                    placeholder="Enter customer name"
+                                                    placeholder="Enter first name"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-gray-500">Last Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={customer.lastName}
+                                                    onChange={(e) => handleCustomerChange(customer.id, "lastName", e.target.value)}
+                                                    disabled={customer.isExisting}
+                                                    className="w-full px-4 py-4 bg-white border border-gray-200 rounded-2xl outline-none text-sm"
+                                                    placeholder="Enter last name"
                                                 />
                                             </div>
 

@@ -269,11 +269,15 @@ const ComplianceStatusCheck = ({ onNext, onPrev, registrationStatusObj }) => {
       let CompanyID = null;
       try {
         CompanyID = window.localStorage.getItem("CompanyId");
-      } catch {}
+      } catch (err) {
+        console.log("❌ Error getting CompanyID from localStorage", err);
+      }
       if (!CompanyID && typeof window !== "undefined") {
         try {
           CompanyID = window.sessionStorage.getItem("CompanyId");
-        } catch {}
+        } catch (err) {
+          console.log("❌ Error getting CompanyID from sessionStorage", err);
+        }
       }
       if (CompanyID) {
         CompanyID = Number(CompanyID);

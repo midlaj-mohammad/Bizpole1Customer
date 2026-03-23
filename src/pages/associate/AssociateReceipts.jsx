@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Loader2, ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
 import { getSecureItem } from '../../utils/secureStorage';
 import { format } from 'date-fns';
 import { listAssociateReceipts, getAssociateReceiptDetails } from '../../api/AssociateApi';
-import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -20,9 +19,8 @@ const AssociateReceipts = () => {
     const [selectedReceipt, setSelectedReceipt] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
 
-    const navigate = useNavigate();
 
-    const fetchReceipts = async () => {
+    const fetchReceipts = useCallback(async () => {
         setLoading(true);
         try {
             const user = getSecureItem("partnerUser") || {};
@@ -30,14 +28,11 @@ const AssociateReceipts = () => {
 
             const response = await listAssociateReceipts({
                 isAssociate: true,
-                AssociateID: AssociateID,
+                AssociateID,
                 limit: pageSize,
                 page: currentPage,
                 search: searchTerm,
             });
-
-            console.log("responseLL", response);
-
 
             if (response.success) {
                 setReceipts(response.data);
@@ -48,11 +43,11 @@ const AssociateReceipts = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, searchTerm]);
 
     useEffect(() => {
         fetchReceipts();
-    }, [currentPage]);
+    }, [fetchReceipts]);
 
     const handleSearch = (e) => {
         if (e.key === 'Enter') {
@@ -251,12 +246,13 @@ const AssociateReceipts = () => {
                                 <th className="px-4 py-4 text-center">S.No</th>
                                 <th className="px-4 py-4">Payment ID</th>
                                 <th className="px-4 py-4">Quote ID</th>
+                                <th className="px-4 py-4">Order ID</th>
                                 <th className="px-4 py-4">Company Name</th>
                                 <th className="px-4 py-4 text-right">Total Amount</th>
-                                <th className="px-4 py-4 text-right">Gov Fee</th>
+                                {/* <th className="px-4 py-4 text-right">Gov Fee</th>
                                 <th className="px-4 py-4 text-right">Vendor Fee</th>
                                 <th className="px-4 py-4 text-right">Contractor Fee</th>
-                                <th className="px-4 py-4 text-right">Professional Fee</th>
+                                <th className="px-4 py-4 text-right">Professional Fee</th> */}
                                 <th className="px-4 py-4">Transaction ID</th>
                                 <th className="px-4 py-4 text-center">Payment Status</th>
                                 <th className="px-4 py-4">Created By</th>
@@ -301,6 +297,10 @@ const AssociateReceipts = () => {
                                             {receipt.QuoteID}
                                         </td>
 
+                                        <td className="px-4 py-4 text-slate-500 font-medium">
+                                            {receipt.OrderID || "N/A"}
+                                        </td>
+
                                         <td className="px-4 py-4">
                                             <span className="px-2 py-1 bg-blue-50 text-blue-700 font-semibold rounded-md text-xs">
                                                 {receipt.CompanyName || "N/A"}
@@ -311,7 +311,7 @@ const AssociateReceipts = () => {
                                             ₹{parseFloat(receipt.TotalAmount || 0).toFixed(2)}
                                         </td>
 
-                                        <td className="px-4 py-4 text-right text-slate-600">
+                                        {/* <td className="px-4 py-4 text-right text-slate-600">
                                             ₹{parseFloat(receipt.GovFee || 0).toFixed(2)}
                                         </td>
 
@@ -327,7 +327,7 @@ const AssociateReceipts = () => {
                                             ₹{parseFloat(
                                                 receipt.ProfessionalFee || receipt.ProfFee || 0
                                             ).toFixed(2)}
-                                        </td>
+                                        </td> */}
 
                                         <td className="px-4 py-4 text-slate-600">
                                             {receipt.TransactionID}

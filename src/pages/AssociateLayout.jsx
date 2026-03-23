@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard,
@@ -11,11 +11,7 @@ import {
     LogOut,
     Search,
     Bell,
-    ChevronRight,
-    Key,
-    Shield,
     Receipt,
-    FileSpreadsheet
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { getSecureItem } from '../utils/secureStorage';
@@ -55,17 +51,19 @@ const AssociateLayout = () => {
     ];
 
     const isActive = (path) => {
-        return location.pathname === path;
+        return location.pathname === path || location.pathname.startsWith(path + '/');
     };
 
 
-    console.log(location.pathname, "Path");
+
 
 
     const getPageTitle = () => {
         if (location.pathname.includes('dashboard')) return 'Dashboard';
         if (location.pathname.includes('profile')) return 'Profile';
-        const item = sidebarItems.find(item => item.path === location.pathname);
+        const item = sidebarItems.find(item =>
+            location.pathname === item.path || location.pathname.startsWith(item.path + '/')
+        );
         return item ? item.label : 'Dashboard';
     };
 
@@ -98,7 +96,7 @@ const AssociateLayout = () => {
                 <div className="p-4 border-t border-slate-800 space-y-1">
                     <button
                         onClick={() => navigate('/associate/profile')}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname === '/associate/profile'
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/associate/profile')
                             ? 'bg-yellow-400/10 text-yellow-400 font-semibold'
                             : 'text-slate-400 hover:bg-white/5 hover:text-white'
                             }`}

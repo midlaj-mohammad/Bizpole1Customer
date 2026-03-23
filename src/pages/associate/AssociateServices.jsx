@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Loader2, Calendar, Hash, Building2, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getSecureItem } from '../../utils/secureStorage';
 import { format, differenceInDays } from 'date-fns';
 import { listOrders } from '../../api/Orders/Order';
@@ -15,7 +15,7 @@ const AssociateServices = () => {
     const [totalOrders, setTotalOrders] = useState(0);
     const pageSize = 10;
 
-    const fetchServices = async () => {
+    const fetchServices = useCallback(async () => {
         setLoading(true);
         try {
             const user = getSecureItem("partnerUser") || {};
@@ -35,8 +35,8 @@ const AssociateServices = () => {
             const response = await listOrders(params);
 
             if (response.success) {
-                // Flatten orders into services
                 const flattened = [];
+
                 response.data.forEach(order => {
                     (order.ServiceDetails || []).forEach(service => {
                         flattened.push({
@@ -57,6 +57,7 @@ const AssociateServices = () => {
                         });
                     });
                 });
+
                 setServices(flattened);
                 setTotalOrders(response.total);
             }
@@ -65,11 +66,11 @@ const AssociateServices = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, filterType, searchTerm]);
 
     useEffect(() => {
         fetchServices();
-    }, [currentPage, filterType]);
+    }, [currentPage, filterType, searchTerm]);
 
     const handleSearch = (e) => {
         if (e.key === 'Enter') {
@@ -163,14 +164,14 @@ const AssociateServices = () => {
                                 <th className="px-4 py-3">Target Date</th>
                                 <th className="px-4 py-3 text-right">Service Value</th>
                                 <th className="px-4 py-3 text-right">Order Value</th>
-                                <th className="px-4 py-3 text-right">Professional Fee</th>
+                                {/* <th className="px-4 py-3 text-right">Professional Fee</th>
                                 <th className="px-4 py-3 text-right">Vendor Fee</th>
                                 <th className="px-4 py-3 text-right">Govt. Fee</th>
                                 <th className="px-4 py-3 text-right">Contractor Fee</th>
                                 <th className="px-4 py-3 text-right">GST Amount</th>
                                 <th className="px-4 py-3 text-right">CGST %</th>
                                 <th className="px-4 py-3 text-right">SGST %</th>
-                                <th className="px-4 py-3 text-right">IGST %</th>
+                                <th className="px-4 py-3 text-right">IGST %</th> */}
                                 <th className="px-4 py-3 text-right">Discount (Order)</th>
                                 <th className="px-4 py-3">Company Name</th>
                                 <th className="px-4 py-3">Company State</th>
@@ -226,14 +227,14 @@ const AssociateServices = () => {
                                             <td className="px-4 py-3 text-slate-400">{service.TargetDate ? format(new Date(service.TargetDate), "yyyy-MM-dd") : "null"}</td>
                                             <td className="px-4 py-3 text-right font-bold text-slate-700">₹{(service.Total || 0).toLocaleString()}</td>
                                             <td className="px-4 py-3 text-right text-slate-500">₹{(info.TotalAmount || 0).toLocaleString()}</td>
-                                            <td className="px-4 py-3 text-right text-slate-600">₹{(service.ProfessionalFee || service.ProfFee || 0).toLocaleString()}</td>
+                                            {/* <td className="px-4 py-3 text-right text-slate-600">₹{(service.ProfessionalFee || service.ProfFee || 0).toLocaleString()}</td>
                                             <td className="px-4 py-3 text-right text-slate-600">₹{(service.VendorFee || 0).toLocaleString()}</td>
                                             <td className="px-4 py-3 text-right text-slate-600">₹{(service.GovtFee || 0).toLocaleString()}</td>
                                             <td className="px-4 py-3 text-right text-slate-600">₹{(service.ContractorFee || 0).toLocaleString()}</td>
                                             <td className="px-4 py-3 text-right text-emerald-600">₹{(service.GstAmount || service.GST || 0).toLocaleString()}</td>
                                             <td className="px-4 py-3 text-right text-slate-400">{service.CGST || "undefined"}</td>
                                             <td className="px-4 py-3 text-right text-slate-400">{service.SGST || "undefined"}</td>
-                                            <td className="px-4 py-3 text-right text-slate-400">{service.IGST || "undefined"}</td>
+                                            <td className="px-4 py-3 text-right text-slate-400">{service.IGST || "undefined"}</td> */}
                                             <td className="px-4 py-3 text-right text-red-400">₹{(service.Discount || 0).toLocaleString()}</td>
                                             <td className="px-4 py-3 text-blue-600 font-medium hover:underline cursor-pointer">{info.CompanyName}</td>
                                             <td className="px-4 py-3 text-slate-500 uppercase">{info.State || "undefined"}</td>

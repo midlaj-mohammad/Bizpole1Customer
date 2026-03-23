@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FiFileText, 
-  FiChevronRight, 
-  FiPlus, 
-  FiMinus, 
+import {
+  FiFileText,
+  FiChevronRight,
+  FiPlus,
+  FiMinus,
   FiDownload,
   FiEye,
   FiCalendar,
@@ -93,6 +93,18 @@ const InvoiceProfile = () => {
       setLoading(false);
     }
   };
+  // const handleOrderChange = async (orderId) => {
+  //   setSelectedOrderId(orderId);
+  //   setLoading(true);
+  //   try {
+  //     const fetchedInvoices = await getInvoicesForOrder(orderId);
+  //     setInvoices(fetchedInvoices);
+  //   } catch (err) {
+  //     setError(err.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const calculateStats = (invoiceData) => {
     const totalInvoices = invoiceData.length;
@@ -154,17 +166,17 @@ const InvoiceProfile = () => {
   };
 
   const faqs = [
-    { 
-      question: 'How are seats billed?', 
-      answer: 'Seats are billed monthly based on your subscription plan. You can add or remove seats at any time.' 
+    {
+      question: 'How are seats billed?',
+      answer: 'Seats are billed monthly based on your subscription plan. You can add or remove seats at any time.'
     },
-    { 
-      question: 'What are available seats?', 
-      answer: 'Available seats are the number of users that can access your account. Additional seats can be purchased as needed.' 
+    {
+      question: 'What are available seats?',
+      answer: 'Available seats are the number of users that can access your account. Additional seats can be purchased as needed.'
     },
-    { 
-      question: 'When will I receive my invoice?', 
-      answer: 'Invoices are generated on the 1st of each month and are due by the 8th of the same month.' 
+    {
+      question: 'When will I receive my invoice?',
+      answer: 'Invoices are generated on the 1st of each month and are due by the 8th of the same month.'
     },
   ];
 
@@ -201,8 +213,7 @@ const InvoiceProfile = () => {
   };
 
   const getStatusColor = (status) => {
-    const statusLower = status?.toLowerCase() || '';
-    switch(statusLower) {
+    switch (status?.toLowerCase()) {
       case 'paid':
         return 'bg-green-100 text-green-800 border border-green-200';
       case 'pending':
@@ -273,11 +284,10 @@ const InvoiceProfile = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveTab(tab.id)}
-              className={`relative px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
-                activeTab === tab.id
-                  ? 'bg-yellow-400 text-white shadow-lg shadow-yellow-400/30'
-                  : 'bg-white text-gray-600 hover:text-yellow-600 hover:bg-yellow-50 border-2 border-yellow-100'
-              }`}
+              className={`relative px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 ${activeTab === tab.id
+                ? 'bg-yellow-400 text-white shadow-lg shadow-yellow-400/30'
+                : 'bg-white text-gray-600 hover:text-yellow-600 hover:bg-yellow-50 border-2 border-yellow-100'
+                }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
@@ -301,10 +311,11 @@ const InvoiceProfile = () => {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
               variants={containerVariants}
+
             >
               {/* Stats Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <motion.div 
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <motion.div
                   variants={itemVariants}
                   className="bg-white rounded-3xl p-6 border-2 border-yellow-100 shadow-lg"
                 >
@@ -319,7 +330,7 @@ const InvoiceProfile = () => {
                   </div>
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                   variants={itemVariants}
                   className="bg-white rounded-3xl p-6 border-2 border-yellow-100 shadow-lg"
                 >
@@ -336,7 +347,7 @@ const InvoiceProfile = () => {
                   </div>
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                   variants={itemVariants}
                   className="bg-white rounded-3xl p-6 border-2 border-yellow-100 shadow-lg"
                 >
@@ -370,7 +381,7 @@ const InvoiceProfile = () => {
               </div>
 
               {/* Invoice Table */}
-              <motion.div 
+              <motion.div
                 variants={itemVariants}
                 className="bg-white rounded-3xl shadow-xl border-2 border-yellow-100 overflow-hidden"
               >

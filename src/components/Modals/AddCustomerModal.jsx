@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, Loader2, Search, Building2, Users, Plus, Trash2, CheckCircle, Smartphone, Mail, MapPin, Globe } from "lucide-react";
+import { X, Loader2, Search, Building2, Users, Plus, Trash2, CheckCircle, Smartphone, Mail, Globe } from "lucide-react";
 import locationData from "../../utils/statesAndDistricts.json";
 import DealsApi from "../../api/DealsApi";
 import { getSecureItem } from "../../utils/secureStorage";
@@ -153,7 +153,8 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     const [customerData, setCustomerData] = useState({
-        customerName: "",
+        firstName: "",
+        lastName: "",
         mobile: "",
         email: "",
         pan: "",
@@ -195,7 +196,8 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
         if (isOpen && initialData) {
             setCustomerData({
                 CustomerID: initialData.CustomerID,
-                customerName: initialData.FirstName || "",
+                firstName: initialData.FirstName || "",
+                lastName: initialData.LastName || "",
                 mobile: initialData.Mobile || "",
                 email: initialData.Email || "",
                 pan: initialData.PANNumber || "",
@@ -234,7 +236,8 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
             }
         } else if (isOpen && !initialData) {
             setCustomerData({
-                customerName: "",
+                firstName: "",
+                lastName: "",
                 mobile: "",
                 email: "",
                 pan: "",
@@ -373,34 +376,34 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
 
 
 
-    const handleNewCompanyEntry = () => {
-        setShowCompanySearch(false);
+    // const handleNewCompanyEntry = () => {
+    //     setShowCompanySearch(false);
 
-        setCompanies(prev => [
-            ...prev,
-            {
-                id: Date.now() + Math.random(),
-                name: "",
-                pan: "",
-                gst: "",
-                cin: "",
-                email: "",
-                mobile: "",
-                constitutionCategory: "",
-                sector: "",
-                businessNature: "",
-                website: "",
-                country: "India",
-                state: "",
-                district: "",
-                pincode: "",
-                preferredLanguage: "",
-                isPrimary: prev.length === 0,
-                isExisting: false,
-                existingCompanyId: null
-            }
-        ]);
-    };
+    //     setCompanies(prev => [
+    //         ...prev,
+    //         {
+    //             id: Date.now() + Math.random(),
+    //             name: "",
+    //             pan: "",
+    //             gst: "",
+    //             cin: "",
+    //             email: "",
+    //             mobile: "",
+    //             constitutionCategory: "",
+    //             sector: "",
+    //             businessNature: "",
+    //             website: "",
+    //             country: "India",
+    //             state: "",
+    //             district: "",
+    //             pincode: "",
+    //             preferredLanguage: "",
+    //             isPrimary: prev.length === 0,
+    //             isExisting: false,
+    //             existingCompanyId: null
+    //         }
+    //     ]);
+    // };
 
 
 
@@ -434,7 +437,7 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     };
 
     const handleSubmit = async () => {
-        if (!customerData.customerName || !customerData.mobile) {
+        if (!customerData.firstName || !customerData.mobile) {
             toast.error("Please fill required customer fields");
             setActiveTab("customer");
             return;
@@ -444,16 +447,9 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
         try {
             const user = getSecureItem("partnerUser") || {};
 
-            // Split customerName for backend if needed
-            const names = (customerData.customerName || "").trim().split(" ");
-            const firstName = names[0] || "";
-            const lastName = names.slice(1).join(" ") || "";
-
             const payload = {
                 customer: {
                     ...customerData,
-                    firstName,
-                    lastName,
                     city: customerData.district // Map district back to city for backend
                 },
                 companies: companies.map(c => ({
@@ -477,7 +473,7 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 toast.error(result.message || (customerData.CustomerID ? "Failed to update customer" : "Failed to add customer"));
             }
         } catch (err) {
-            toast.error("Error connecting to server");
+            toast.error("Error connecting to server", err);
         } finally {
             setIsSubmitting(false);
         }
@@ -540,19 +536,34 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                 className="space-y-6"
                             >
 
-                                {/* Customer Name */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-600">
-                                        Customer Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="customerName"
-                                        value={customerData.customerName}
-                                        onChange={handleCustomerChange}
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
-                                        placeholder="Enter customer name"
-                                    />
+                                {/* Customer Names */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-600">
+                                            First Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="firstName"
+                                            value={customerData.firstName}
+                                            onChange={handleCustomerChange}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                            placeholder="Enter first name"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-600">
+                                            Last Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="lastName"
+                                            value={customerData.lastName}
+                                            onChange={handleCustomerChange}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                            placeholder="Enter last name"
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Mobile */}
@@ -720,7 +731,7 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                     </div>
                                 </div>
 
-                                {companies.map((company, index) => (
+                                {companies.map((company) => (
                                     <motion.div
                                         key={company.id}
                                         layout
@@ -882,6 +893,21 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                                                 </option>
                                                             ))}
                                                 </select>
+                                            </div>
+
+                                            {/* Company Pin Code */}
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
+                                                    Pin Code
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={company.pincode}
+                                                    onChange={(e) => handleCompanyChange(company.id, "pincode", e.target.value)}
+                                                    disabled={company.isExisting}
+                                                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none text-sm"
+                                                    placeholder="Enter pin code"
+                                                />
                                             </div>
 
                                             {/* Company Preferred Language */}

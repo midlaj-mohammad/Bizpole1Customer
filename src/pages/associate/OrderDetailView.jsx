@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    ChevronLeft, Loader2, Calendar, Hash, Building2, User,
-    Briefcase, Activity, Clock, FileText, IndianRupee,
-    AlertCircle, CheckCircle2, MessageSquare, ListChecks,
-    FolderOpen, Receipt, FileStack, LayoutDashboard, History,
-    PieChart, Target, Download, X, Eye
+    ChevronLeft, Loader2, Activity, FileText, IndianRupee,
+    AlertCircle, ListChecks,
+    FolderOpen, Receipt, FileStack, LayoutDashboard,
+    Download, X,
 } from 'lucide-react';
 import { getOrderById } from '../../api/Orders/Order';
 import { format } from 'date-fns';
-import { listAssociateReceipts, getAssociateReceiptDetails, getInvoicesForService, getReceiptsForOrder } from '../../api/AssociateApi';
-import { getSecureItem } from '../../utils/secureStorage';
+import { getAssociateReceiptDetails, getInvoicesForService, getReceiptsForOrder } from '../../api/AssociateApi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -35,7 +33,7 @@ const OrderDetailView = () => {
 
     const tabs = [
         { name: 'Summary', icon: LayoutDashboard },
-        // { name: 'Services', icon: ListChecks },
+        { name: 'Services', icon: ListChecks },
         // { name: 'Files', icon: FolderOpen },
         { name: 'Receipts', icon: Receipt },
         { name: 'Invoice', icon: FileStack },
@@ -59,6 +57,7 @@ const OrderDetailView = () => {
                     setOrder({
                         ...apiData.order,
                         ServiceDetails: apiData.services || [],
+                        quote: apiData.quote || {},
                         totals: apiData.totals || {}
                     });
                 }
@@ -75,27 +74,16 @@ const OrderDetailView = () => {
     console.log("WWWW", { receipts });
 
 
-    useEffect(() => {
-        if (activeTab === 'Receipts' && order) {
-            fetchReceipts();
-        }
-
-        if (activeTab === 'Invoice' && order) {
-            fetchInvoices();
-        }
-
-    }, [activeTab, order]);
 
 
-    const fetchReceipts = async () => {
+
+    const fetchReceipts = useCallback(async () => {
         if (!order) return;
+
         setReceiptsLoading(true);
+
         try {
-
-            console.log("Order ID", order);
-
             const response = await getReceiptsForOrder(order.QuoteID);
-            console.log("Order receipts", response);
 
             if (response.success) {
                 setReceipts(response?.payments || []);
@@ -108,20 +96,20 @@ const OrderDetailView = () => {
         } finally {
             setReceiptsLoading(false);
         }
-    };
+
+    }, [order]);
 
 
-    const fetchInvoices = async () => {
+    const fetchInvoices = useCallback(async () => {
         if (!order) return;
 
         setInvoiceLoading(true);
+
         try {
             const response = await getInvoicesForService({
                 quoteId: order.QuoteID,
                 orderId: order.OrderID
             });
-
-            console.log("Invoice API Response:", response);
 
             if (response.success) {
                 setInvoices(response.data || []);
@@ -135,7 +123,27 @@ const OrderDetailView = () => {
         } finally {
             setInvoiceLoading(false);
         }
-    };
+
+    }, [order]);
+
+
+    useEffect(() => {
+        if (!order) return;
+
+        switch (activeTab) {
+            case 'Receipts':
+                fetchReceipts();
+                break;
+
+            case 'Invoice':
+                fetchInvoices();
+                break;
+
+            default:
+                break;
+        }
+
+    }, [activeTab, order, fetchReceipts, fetchInvoices]);
 
 
     const handleViewReceipt = async (paymentId) => {
@@ -167,6 +175,7 @@ const OrderDetailView = () => {
                 return;
             }
         }
+
 
         const doc = new jsPDF();
         doc.setFillColor(255, 193, 7);
@@ -264,6 +273,10 @@ const OrderDetailView = () => {
         );
     }
 
+
+    console.log("Full Data:", order);
+
+
     if (!order) {
         return (
             <div className="p-12 text-center">
@@ -328,25 +341,24 @@ const OrderDetailView = () => {
                         <InfoCard icon={<FileText className="w-4 h-4" />} title="Basic Information">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
                                 <DataItem label="Order ID" value={order.OrderCodeId} />
-                                <DataItem label="Order Date" value={order.OrderCreatedAt ? format(new Date(order.OrderCreatedAt), 'dd MMM yyyy HH:mm:ss') : '--'} />
+                                <DataItem label="Order Date" value={order.quote?.RealOrderCreatedAt ? format(new Date(order.quote?.RealOrderCreatedAt), 'dd MMM yyyy HH:mm:ss') : '--'} />
                                 <DataItem label="Order Status" value={order.OrderStatus || 'pending'} />
                                 <DataItem label="Order Source" value={order.SourceOfSale || 'Associate'} />
                                 <DataItem label="Company Name" value={order.CompanyName} isBold />
                                 <DataItem label="Customer Name" value={order.CustomerName} isBold />
                                 <DataItem label="Order CRE" value={order.QuoteCRE_EmployeeName || 'admin'} />
-                                <DataItem label="Connected Quote" value={order.QuoteIDCode || '-'} />
                             </div>
                         </InfoCard>
 
                         {/* 2. Financial Summary */}
                         <InfoCard icon={<IndianRupee className="w-4 h-4" />} title="Pricing Information">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
-                                <PriceItem label="Professional Fee" value={order.totals?.ProfessionalFee || 0} />
+                                {/* <PriceItem label="Professional Fee" value={order.totals?.ProfessionalFee || 0} />
                                 <PriceItem label="Vendor Fee" value={order.totals?.VendorFee || 0} />
                                 <PriceItem label="Contractor Fee" value={order.totals?.ContractorFee || 0} />
                                 <PriceItem label="Govt. Fee" value={order.totals?.GovFee || 0} />
                                 <PriceItem label="GST Amount" value={order.totals?.GST || 0} />
-                                <PriceItem label="Discount Applied" value={order.Discount || 0} />
+                                <PriceItem label="Discount Applied" value={order.Discount || 0} /> */}
                                 <PriceItem label="Order Value" value={order.TotalAmount || 0} isTotal />
                                 <PriceItem label="Amount Received" value={order.ReceivedAmount || 0} />
                                 <PriceItem label="Amount Pending" value={order.PendingAmount || 0} />
@@ -363,29 +375,34 @@ const OrderDetailView = () => {
                                     <ListChecks className="w-4 h-4 text-[#4b49ac]" />
                                     Service Summary ({order.ServiceDetails?.length || 0})
                                 </h3>
-                                <button className="text-[10px] font-bold text-[#4b49ac] hover:underline">VIEW ALL SERVICES</button>
+                                {/* <button className="text-[10px] font-bold text-[#4b49ac] hover:underline">VIEW ALL SERVICES</button> */}
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse text-[11px]">
                                     <thead>
                                         <tr className="bg-slate-50/50 border-b border-slate-100 uppercase tracking-tighter font-bold text-slate-400">
                                             <th className="px-6 py-3">Service Name</th>
-                                            <th className="px-6 py-3">Category</th>
-                                            <th className="px-6 py-3 text-right">Total Price</th>
+                                            <th className="px-6 py-3 text-right">Total Amount</th>
+                                            <th className="px-6 py-3 text-right">Advance Amount</th>
+                                            <th className="px-6 py-3 text-right">Pending Amount</th>
                                             <th className="px-6 py-3">Status</th>
-                                            <th className="px-6 py-3">TAT Days</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50 text-[12px]">
                                         {(order.ServiceDetails || []).map((service, idx) => (
                                             <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
                                                 <td className="px-6 py-4 font-semibold text-slate-700">{service.ServiceName}</td>
-                                                <td className="px-6 py-4 text-slate-500 italic">{service.ServiceCategory || '--'}</td>
-                                                <td className="px-6 py-4 text-right font-bold text-slate-700">₹{(service.Total || 0).toLocaleString()}</td>
-                                                <td className="px-6 py-4 text-slate-500 uppercase font-black text-[9px]">
-                                                    <span className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full">{service.ServiceStatus || 'pending'}</span>
+                                                <td className="px-6 py-4 text-right font-bold text-slate-700">₹{parseFloat(service.Total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-6 py-4 text-right text-slate-600 font-medium">₹{parseFloat(service.AdvanceAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-6 py-4 text-right text-red-600 font-bold">₹{parseFloat(service.PendingAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-6 py-4 font-black text-[9px]">
+                                                    <span className={`px-2 py-1 rounded-full uppercase ${service.StatusRemark === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                                                        service.StatusRemark === 'In Progress' ? 'bg-blue-50 text-blue-600' :
+                                                            'bg-slate-100 text-slate-500'
+                                                        }`}>
+                                                        {service.StatusRemark || 'pending'}
+                                                    </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-slate-400">{service.TotalTAT || 0} Days</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -417,7 +434,7 @@ const OrderDetailView = () => {
                                             <th className="px-4 py-4">Transaction ID</th>
                                             <th className="px-4 py-4">Order ID</th>
                                             <th className="px-4 py-4">Company Name</th>
-                                            <th className="px-4 py-4">Company CIN</th>
+                                            {/* <th className="px-4 py-4">Company CIN</th> */}
                                             <th className="px-4 py-4">Mode</th>
                                             <th className="px-4 py-4">Amount Paid</th>
                                             <th className="px-4 py-4">Receipt Status</th>
@@ -428,7 +445,7 @@ const OrderDetailView = () => {
                                             <th className="px-4 py-4">Initiated By</th>
                                             <th className="px-4 py-4">Initiated On</th>
                                             <th className="px-4 py-4">Payment Link Status</th>
-                                            <th className="px-4 py-4">Payment Link Expiry</th>
+                                            {/* <th className="px-4 py-4">Payment Link Expiry</th> */}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -444,7 +461,7 @@ const OrderDetailView = () => {
                                                 <td className="px-4 py-3 text-slate-600">{receipt.TransactionID || "-"}</td>
                                                 <td className="px-4 py-3 text-slate-600">{receipt.QuoteCode || receipt.QuoteID || "-"}</td>
                                                 <td className="px-4 py-3 text-slate-700 font-medium">{receipt.CompanyName || "-"}</td>
-                                                <td className="px-4 py-3 text-slate-500">{receipt.CIN || "-"}</td>
+                                                {/* <td className="px-4 py-3 text-slate-500">{receipt.CIN || "-"}</td> */}
                                                 <td className="px-4 py-3 text-slate-600">{receipt.PaymentMethod || "Razorpay"}</td>
                                                 <td className="px-4 py-3 font-bold text-slate-800">₹{parseFloat(receipt.TotalAmount || 0).toFixed(2)}</td>
                                                 <td className="px-4 py-3 text-slate-600 capitalize">{receipt.PaymentStatus || "pending"}</td>
@@ -468,7 +485,7 @@ const OrderDetailView = () => {
                                                     {receipt.CreatedAt ? format(new Date(receipt.CreatedAt), "yyyy-MM-dd HH:mm:ss") : "-"}
                                                 </td>
                                                 <td className="px-4 py-3 text-slate-600">{receipt.PaymentLinkStatus || "Manual"}</td>
-                                                <td className="px-4 py-3 text-slate-500">{receipt.LinkExpiry || "-"}</td>
+                                                {/* <td className="px-4 py-3 text-slate-500">{receipt.LinkExpiry || "-"}</td> */}
                                             </tr>
                                         ))}
                                     </tbody>
