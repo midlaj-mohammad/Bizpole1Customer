@@ -361,20 +361,9 @@ const MyOrderDetails = () => {
                         key={item.id || index}
                         variants={itemVariants}
                         className={`flex items-center justify-between p-4 bg-gray-50 rounded-xl transition-colors cursor-pointer hover:bg-yellow-100 border ${selectedService && selectedService.id === item.id ? 'border-yellow-400' : 'border-transparent'}`}
-                        onClick={async () => {
+                        onClick={() => {
                           if (!item.ServiceDetailsID) return;
-                          setSelectedService(item);
-                          setTasksLoading(true);
-                          setTasksError(null);
-                          try {
-                            const tasks = await getServiceTasks({ serviceDetailsId: item.ServiceDetailsID });
-                            setServiceTasks(tasks || []);
-                          } catch (err) {
-                            setTasksError('Failed to load tasks for this service.', err);
-                            setServiceTasks([]);
-                          } finally {
-                            setTasksLoading(false);
-                          }
+                          navigate('/dashboard/bizpoleone/tasks', { state: { serviceId: item.ServiceDetailsID, service: item } });
                         }}
                       >
                         <div className="flex-1">

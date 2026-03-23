@@ -42,6 +42,7 @@ import ServiceDetails from "./pages/ServiceDetails";
 import ProductList from "./pages/ProductView/ProductList";
 import Partners from "./pages/Partners";
 
+
 import Plansandpricing from "./pages/Plansandpricing";
 import MyPackages from "./pages/MyPackages";
 import MyIndividualservices from "./pages/MyIndividualservices";
@@ -55,6 +56,8 @@ import BusinessQuizWizard from "./components/Quastions";
 import { getSecureItem, setSecureItem } from "./utils/secureStorage";
 import { CartProvider } from "./context/CartContext";
 import GlobalCart from "./components/Cart/GlobalCart";
+import InvoicePreview from "./pages/InvoicePreview";
+
 
 // Associate Dashboard
 import AssociateLayout from "./pages/AssociateLayout";
@@ -129,33 +132,36 @@ function App() {
         <main className="flex-grow">
           <Routes>
 
-            {/* Public Routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/startbusiness/*" element={<StartYourBusiness />} />
-            <Route path="/checking" element={<BusinessPanel />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/services/:id" element={<ServiceDetails />} />
-            <Route path="/products" element={<ProductList />} />
-            <Route path="/partners" element={<Partners />} />
-            <Route path="/startbusiness/about" element={<Tellabout />} />
-            <Route path="/startbusiness/subscriptions" element={<Subscription />} />
-            <Route path="/payments" element={<Payment />} />
-            <Route path="/quiz" element={<Quiz />} />
-            <Route path="/questions" element={<BusinessQuizWizard />} />
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/bizpoleone" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/startbusiness/*" element={<StartYourBusiness />} />
+          <Route path="/checking" element={<BusinessPanel />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/services/:id" element={<ServiceDetails />} />
+          <Route path="/products" element={<ProductList />} />
+          <Route path="/partners" element={<Partners />} />
+          <Route path="/startbusiness/about" element={<Tellabout />} />
+          <Route path="/startbusiness/subscriptions" element={<Subscription />} />
+          <Route path="/payments" element={<Payment />} />
+          <Route path="/quiz" element={<Quiz />} />
+          <Route path="/questions" element={<BusinessQuizWizard />} />
 
-            {/* Profile */}
-            <Route path="/profile" element={<ProfileLayout />}>
-              <Route index element={<ProfilePage />} />
-              <Route path="calendar" element={<CalenderPage />} />
-              <Route path="documents" element={<ProfileDocuments />} />
-              <Route path="moderncalendar" element={<ModernCalendar />} />
-              <Route path="events" element={<ProfileEvents />} />
-              <Route path="files" element={<CustomerFiles />} />
-              <Route path="companydetails" element={<CompanyDetails />} />
-              <Route path="invoice" element={<Invoiceprofile />} />
-            </Route>
+          {/* Profile */}
+          <Route path="/profile" element={<ProfileLayout />}>
+            <Route index element={<ProfilePage />} />
+            <Route path="calendar" element={<CalenderPage />} />
+            <Route path="documents" element={<ProfileDocuments />} />
+            <Route path="moderncalendar" element={<ModernCalendar />} />
+            <Route path="events" element={<ProfileEvents />} />
+            <Route path="files" element={<CustomerFiles />} />
+            <Route path="companydetails" element={<CompanyDetails />} />
+            <Route path="invoice" element={<Invoiceprofile />} />
+            <Route path="invoice-preview/:encrypted" element={<InvoicePreview />} />
+
+
+          </Route>
 
             <Route path="/existing-companies" element={<ExisitingCompanies />} />
 

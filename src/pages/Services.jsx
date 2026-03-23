@@ -67,7 +67,7 @@ const getCategoryIcon = (name = "") => {
   if (lower.includes("compliance")) return "✅";
   if (lower.includes("finance")) return "💰";
   if (lower.includes("trade")) return "🌐";
-  return "📁";
+  return " ";
 };
 
 import { getAllStates } from "../api/States";

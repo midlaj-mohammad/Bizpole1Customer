@@ -34,8 +34,8 @@ const HeroSection = () => {
 
   return (
     <section
-      className="relative bg-cover bg-center min-h-screen flex  flex-col items-center justify-center px-4 sm:px-6 py-12 md:py-16 text-center overflow-hidden"
-      style={{ backgroundImage: "url('/Images/hero-bg.webp')" }}
+      className="relative bg-cover bg-center min-h-screen flex  flex-col items-center justify-center px-4 sm:px-6 py-12 md:py-16 text-center overflow-hidden bg-gradient-to-t from-white to-yellow-50"
+    
     >
       {/* Content */}
       <div className="relative z-10 w-full max-w-6xl mx-auto hero-content">
@@ -144,19 +144,18 @@ const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8, duration: 0.6 }}
           data-aos="fade-up"
-          className="text-lg sm:text-xl md:text-3xl font-semibold mb-6 md:mb-10 text-black px-4"
+          className="text-lg sm:text-xl md:text-2xl font-semibold mb-4 md:mb-6 text-black px-4"
         >
           More than 25,000 clients
         </motion.h2>
       </div>
 
 
-
-      <div className="py-6 md:py-12 ">
-        <Suspense fallback={null}>
-          <PaymentLogs />
-        </Suspense>
-      </div>
+           <div className="py-4 md:py-6 ">
+             <Suspense fallback={null}>
+               <PaymentLogs />
+             </Suspense>
+           </div>
 
 
     </section>

@@ -2,21 +2,32 @@
 
 @import "aos/dist/aos.css";
 
-body{
-    font-family: "Poppins", sans-serif !important;
+body {
+  font-family: "Poppins", sans-serif !important;
 }
 
-*{
-    font-family: "Poppins", sans-serif !important;
+* {
+  font-family: "Poppins", sans-serif !important;
 
 }
-.hero-content{
-    padding-top: 150px;
+
+.hero-content {
+  padding-top: 150px;
 }
 
 .rbc-month-view {
-      border: 1px solid #0f0f0f00 !important;
+  border: 1px solid #0f0f0f00 !important;
 
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 180px;
 }
 
 
@@ -25,9 +36,11 @@ body{
 /* Event cards (month, week, day) */
 .rbc-event,
 .rbc-day-slot .rbc-background-event {
-  background-color: #f59e0b !important; /* amber-500 */
+  background-color: #f59e0b !important;
+  /* amber-500 */
   border: none !important;
-  color: #111827 !important; /* gray-900 */
+  color: #111827 !important;
+  /* gray-900 */
   border-radius: 8px !important;
   padding: 2px 6px !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
@@ -42,7 +55,8 @@ body{
 
 /* Drag-to-create selection overlay (week/day views) */
 .rbc-slot-selection {
-  background-color: rgba(245, 158, 11, 0.25) !important; /* amber-500 @ 25% */
+  background-color: rgba(245, 158, 11, 0.25) !important;
+  /* amber-500 @ 25% */
   border: 1px dashed #f59e0b !important;
 }
 
@@ -53,40 +67,50 @@ body{
 
 /* Today highlight */
 .rbc-today {
-  background-color: rgba(251, 191, 36, 0.12) !important; /* amber-400 @ 12% */
+  background-color: rgba(251, 191, 36, 0.12) !important;
+  /* amber-400 @ 12% */
 }
 
 /* Toolbar buttons (optional, if you want a yellow accent) */
 .rbc-toolbar button:hover {
-  background-color: #fff7ed !important; /* amber-50 */
+  background-color: #fff7ed !important;
+  /* amber-50 */
   border-color: #f59e0b !important;
-  color: #92400e !important; /* amber-800 */
+  color: #92400e !important;
+  /* amber-800 */
 }
 
 .rbc-toolbar .rbc-active {
-  background-color: #fde68a !important; /* amber-300 */
+  background-color: #fde68a !important;
+  /* amber-300 */
   border-color: #f59e0b !important;
   color: #92400e !important;
 }
+
 .rbc-event.rbc-selected {
-    background-color: #d9770600 !important;
+  background-color: #d9770600 !important;
 }
-.rbc-event{
-      background-color: #d9770600 !important;
-    box-shadow: none !important;
-    color: white !important;
-    border-radius: 0px !important;
+
+.rbc-event {
+  background-color: #d9770600 !important;
+  box-shadow: none !important;
+  color: white !important;
+  border-radius: 0px !important;
 }
+
 .navitems {
-  font-size: 18px; /* default size for large screens */
+  font-size: 18px;
+  /* default size for large screens */
 }
-.custom-container{
+
+.custom-container {
   max-width: 1800px;
   margin-left: auto;
   margin-right: auto;
   padding-left: 1rem;
   padding-right: 1rem;
 }
+
 /* Tablet (max-width: 1024px) */
 @media (max-width: 1324px) {
   .navitems {
@@ -107,17 +131,7 @@ body{
     font-size: 12px;
   }
 }
-button{
+
+button {
   cursor: pointer;
 }
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Hide scrollbar for IE, Edge and Firefox */
-.no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}

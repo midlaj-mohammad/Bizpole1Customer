@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import CompanyInformationForm from '../components/ExixistingCompany/CompanyInformationForm';
+
 import DirectorPromoterForm from '../components/ExixistingCompany/DirectorPromoterForm';
-import RegistrationStatusForm from '../components/ExixistingCompany/RegistrationStatusForm';
+// RegistrationStatusForm removed; logic will be combined into ComplianceStatusCheck
 import ComplianceStatusCheck from '../components/ExixistingCompany/ComplianceStatusCheck';
 import { setSecureItem, getSecureItem } from "../utils/secureStorage";
+import CompanyInformationForm from '../components/ExixistingCompany/CompanyInformationForm';
 
 const ExisitingCompanies = () => {
   // Persist step in localStorage
@@ -12,7 +13,7 @@ const ExisitingCompanies = () => {
     return saved ? Number(saved) : 1;
   };
   const [step, setStep] = useState(getInitialStep());
-  const [registrationStatusObj, setRegistrationStatusObj] = useState(null);
+  // registrationStatusObj removed; logic will be handled in ComplianceStatusCheck
 
   // Update localStorage when step changes
   React.useEffect(() => {
@@ -24,8 +25,7 @@ const ExisitingCompanies = () => {
 
   {step === 1 && <CompanyInformationForm onNext={() => setStep(2)} step={step} setStep={setStep} />}
   {step === 2 && <DirectorPromoterForm onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-  {step === 3 && <RegistrationStatusForm onNext={(obj) => { setRegistrationStatusObj(obj); setStep(4); }} onBack={() => setStep(2)} />}
-  {step === 4 && <ComplianceStatusCheck onBack={() => setStep(3)} registrationStatusObj={registrationStatusObj} />}
+  {step === 3 && <ComplianceStatusCheck onBack={() => setStep(2)} />}
     </div>
   );
 }
