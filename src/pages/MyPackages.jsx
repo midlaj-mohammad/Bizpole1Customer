@@ -3,7 +3,7 @@ const orderStatusList = [
   { value: 1, label: 'In Progress' },
   { value: 2, label: 'Completed' },
   { value: 3, label: 'Pending' },
-  { value: 4, label: 'Completed, Payment Pending' },
+  { value: 4, label: 'Completed' },
   { value: 5, label: 'Completed, Payment Done' },
 ];
 
@@ -51,7 +51,7 @@ const MyPackages = () => {
         setTotalPages(total ? Math.ceil(total / PAGE_SIZE) : 1);
       } catch (err) {
         console.error("Error fetching packages:", err);
-        setError("Failed to load your packages.");
+        // setError("Failed to load your packages.");
       } finally {
         setLoading(false);
       }
@@ -123,6 +123,8 @@ const MyPackages = () => {
 
       {loading ? (
         <div className="text-center py-20 text-gray-500">Loading packages...</div>
+      ) : (!packages.length && error === null) ? (
+        <div className="text-center py-20 text-gray-500">No order details found for this company</div>
       ) : error ? (
         <div className="text-center py-20 text-red-500">{error}</div>
       ) : (

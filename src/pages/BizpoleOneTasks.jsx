@@ -3,252 +3,244 @@ import { useState, useEffect } from "react";
 import {
   getCompanyServices,
   getServiceDeliverablesByServiceDetailId,
-  getResponseFields,
   getTasks,
   getResponseFieldsBySerId,
 } from "../api/TaskApi";
 import { serviceFormMapping } from "../api/Services/ServiceDetails";
-// State for tasks fetched from /Task API
+import { useLocation } from "react-router-dom";
 import ServiceTaskListing from "../../src/components/associate/ServiceTaskListing";
 import { getSecureItem, removeSecureItem } from "../utils/secureStorage";
 
-// const currentTasks = [
-//   {
-//     id: 1,
-//     title: "Create a user flow of social application design",
-//     status: "Approved",
-//     date: "18 Apr 2021",
-//     progress: 60,
-//     completed: true,
-//   },
-//   {
-//     id: 2,
-//     title: "Create a user flow of social application design",
-//     status: "In review",
-//     date: "18 Apr 2021",
-//     progress: 40,
-//     completed: true,
-//   },
-//   {
-//     id: 3,
-//     title: "Landing page design for Fintech project of singapore",
-//     status: "Not Approved", // <-- changed from 'In review'
-//     date: "18 Apr 2021",
-//     progress: 80,
-//     completed: true,
-//   },
-//   {
-//     id: 4,
-//     title: "Interactive prototype for app screens of delannine project",
-//     status: "In review",
-//     date: "18 Apr 2021",
-//     progress: 25,
-//     completed: false,
-//   },
-//   {
-//     id: 5,
-//     title: "Interactive prototype for app screens of delannine project",
-//     status: "Approved",
-//     date: "",
-//     progress: 90,
-//     completed: true,
-//   },
-// ];
+// Mock data (keep as fallback)
+const currentTasks = [
+  {
+    id: 1,
+    title: "Create a user flow of social application design",
+    status: "Approved",
+    date: "18 Apr 2021",
+    progress: 60,
+    completed: true,
+  },
+  {
+    id: 2,
+    title: "Create a user flow of social application design",
+    status: "In review",
+    date: "18 Apr 2021",
+    progress: 40,
+    completed: true,
+  },
+  {
+    id: 3,
+    title: "Landing page design for Fintech project of singapore",
+    status: "Not Approved",
+    date: "18 Apr 2021",
+    progress: 80,
+    completed: true,
+  },
+  {
+    id: 4,
+    title: "Interactive prototype for app screens of delannine project",
+    status: "In review",
+    date: "18 Apr 2021",
+    progress: 25,
+    completed: false,
+  },
+  {
+    id: 5,
+    title: "Interactive prototype for app screens of delannine project",
+    status: "Approved",
+    date: "",
+    progress: 90,
+    completed: true,
+  },
+];
 
-// Upcoming tasks should only show "Disable" (not started) and have no click functionality
-// const upcomingTasks = [
-//   {
-//     id: 1,
-//     title: "Create a user flow of social application design",
-//     status: "Disable",
-//     date: "18 Apr 2021",
-//     progress: 0,
-//   },
-//   {
-//     id: 2,
-//     title: "Create a user flow of social application design",
-//     status: "Disable",
-//     date: "18 Apr 2021",
-//     progress: 0,
-//   },
-//   {
-//     id: 3,
-//     title: "Landing page design for Fintech project of singapore",
-//     status: "Disable",
-//     date: "18 Apr 2021",
-//     progress: 0,
-//   },
-//   {
-//     id: 4,
-//     title: "Interactive prototype for app screens of delannine project",
-//     status: "Disable",
-//     date: "",
-//     progress: 0,
-//   },
-//   {
-//     id: 5,
-//     title: "Interactive prototype for app screens of delannine project",
-//     status: "Disable",
-//     date: "",
-//     progress: 0,
-//   },
-// ];
+const upcomingTasks = [
+  {
+    id: 1,
+    title: "Create a user flow of social application design",
+    status: "Disable",
+    date: "18 Apr 2021",
+    progress: 0,
+  },
+  {
+    id: 2,
+    title: "Create a user flow of social application design",
+    status: "Disable",
+    date: "18 Apr 2021",
+    progress: 0,
+  },
+  {
+    id: 3,
+    title: "Landing page design for Fintech project of singapore",
+    status: "Disable",
+    date: "18 Apr 2021",
+    progress: 0,
+  },
+  {
+    id: 4,
+    title: "Interactive prototype for app screens of delannine project",
+    status: "Disable",
+    date: "",
+    progress: 0,
+  },
+  {
+    id: 5,
+    title: "Interactive prototype for app screens of delannine project",
+    status: "Disable",
+    date: "",
+    progress: 0,
+  },
+];
 
 export default function ServiceSelection() {
-  // State for company services
-  // State for ServiceTaskListing integration
+  const location = useLocation();
+  const navState = location.state || {};
+  const navServiceId = navState.serviceId;
+  const navService = navState.service;
+  const navQuoteId = navService?.QuoteID || navState.quoteId;
+
+  // State declarations - all at the top level
   const [formConfig, setFormConfig] = useState([]);
   const [service, setService] = useState(null);
   const [companyServices, setCompanyServices] = useState(null);
   const [loadingCompanyServices, setLoadingCompanyServices] = useState(false);
   const [companyServicesError, setCompanyServicesError] = useState(null);
   const [responseFields, setResponseFields] = useState([]);
-  // const [responseFieldsLoading, setResponseFieldsLoading] = useState(false);
-  useEffect(() => {
-    console.log("responseFields:", responseFields);
-  }, [responseFields]);
-  // Fetch company services when companyId is available
-
-  useEffect(() => {
-    const raw = localStorage.getItem("selectedCompany");
-    if (raw && raw === "[object Object]") {
-      // Remove the invalid value
-      removeSecureItem("selectedCompany");
-      // Optionally, set a default or prompt user to re-select
-      console.warn(
-        "selectedCompany was invalid and has been removed. Please re-select the company.",
-      );
-    }
-  }, []);
-  // Get selectedCompany from secure storage
-  const selectedCompany = getSecureItem("selectedCompany");
-  console.log("selectedCompany from secure storage:", selectedCompany);
-  const companyId =
-    selectedCompany && selectedCompany.CompanyID
-      ? selectedCompany.CompanyID
-      : null;
-  const [selectedService, setSelectedService] = useState(null);
-
+  const [responseFieldsLoading, setResponseFieldsLoading] = useState(false);
+  const [serviceFormFullMapping, setServiceFormFullMapping] = useState(null);
+  const [selectedService, setSelectedService] = useState(navService || null);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [documentsError, setDocumentsError] = useState(null);
   const [verifiedFields, setVerifiedFields] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Task");
-  //  const [statusFilter, setStatusFilter] = useState("All");
-
+  const [statusFilter, setStatusFilter] = useState("All");
   const [collectDataTask, setCollectDataTask] = useState(null);
   const [noteTask, setNoteTask] = useState(null);
-  useEffect(() => {
-    if (companyId) {
-      setLoadingCompanyServices(true);
-      setCompanyServicesError(null);
-      getCompanyServices(companyId)
-        .then((data) => {
-          setCompanyServices(data);
-          setLoadingCompanyServices(false);
-          // Set first service as default if available
-          if (data && data.services && data.services.length > 0) {
-            setSelectedService(data.services[0]);
-          }
-        })
-        .catch((err) => {
-          setCompanyServicesError("Failed to fetch company services.", err);
-          setLoadingCompanyServices(false);
-        });
-    } else {
-      setCompanyServices(null);
-      setSelectedService(null);
-    }
-  }, [companyId]);
   const [tasksFromApi, setTasksFromApi] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [tasksError, setTasksError] = useState(null);
-  // Fetch tasks from /Task API when Task tab is active and service is selected
+  const [serviceDeliverables, setServiceDeliverables] = useState(null);
+  const [loadingDeliverables, setLoadingDeliverables] = useState(false);
+  const [deliverablesError, setDeliverablesError] = useState(null);
+    const [approvalStatus, setApprovalStatus] = useState(null);
+
+
+  // Get selectedCompany from secure storage
   useEffect(() => {
-    const serviceCompanyId =
-      selectedService &&
-      (selectedService.CompanyID || selectedService.companyId || companyId);
-    if (activeTab === "Task" && serviceCompanyId) {
-      setLoadingTasks(true);
-      setTasksError(null);
-      // You can adjust the payload as needed
-      getTasks({
-        ServiceDetailID: selectedService?.ServiceDetailID,
-        QuoteID: selectedService?.QuoteID,
-      })
-        .then((data) => {
-          console.log("[Task API] /Task response:", data);
-          setTasksFromApi(data || []);
-          setLoadingTasks(false);
-        })
-        .catch((err) => {
-          setTasksError("Failed to fetch tasks from /Task API.", err);
-          setLoadingTasks(false);
-        });
-    } else if (activeTab === "Task") {
-      setTasksFromApi([]);
+    const raw = localStorage.getItem("selectedCompany");
+    if (raw && raw === "[object Object]") {
+      removeSecureItem("selectedCompany");
+      console.warn("selectedCompany was invalid and has been removed. Please re-select the company.");
     }
-  }, [activeTab, selectedService]);
-  // Fix selectedCompany in localStorage if it is not valid JSON
-  // const getStatusColor = (status) => {
-  //   switch (status) {
-  //     case "Approved":
-  //       return "bg-green-100 text-green-700";
-  //     case "In review":
-  //       return "bg-yellow-100 text-yellow-700";
-  //     case "Not Approved":
-  //       return "bg-red-100 text-red-700";
-  //     case "Disable":
-  //       return "bg-gray-100 text-gray-500";
-  //     default:
-  //       return "bg-gray-100 text-gray-600";
-  //   }
-  // };
+  }, []);
 
-  // const getProgressBarColor = (progress) => {
-  //   if (progress >= 80) return "bg-green-400";
-  //   if (progress >= 60) return "bg-yellow-400";
-  //   if (progress >= 40) return "bg-orange-400";
-  //   return "bg-red-400";
-  // };
+  const selectedCompany = getSecureItem("selectedCompany");
+  console.log("selectedCompany from secure storage:", selectedCompany);
+  const companyId = selectedCompany?.CompanyID || null;
 
-  // const filteredCurrentTasks =
-  //   statusFilter === "All"
-  //     ? currentTasks
-  //     : currentTasks.filter((task) => task.status === statusFilter);
-  // const filteredUpcomingTasks =
-  //   statusFilter === "All"
-  //     ? upcomingTasks
-  //     : upcomingTasks.filter((task) => task.status === statusFilter);
-
-  // Fetch service form mapping when Documents tab is active and service is selected
+  // Fetch company services
   useEffect(() => {
-    // Use companyId from selectedService if available, else fallback to global companyId
-    const serviceCompanyId =
-      selectedService &&
-      (selectedService.CompanyID || selectedService.companyId || companyId);
-    if (activeTab === "Documents" && serviceCompanyId) {
+    if (companyId) {
+      const fetchCompanyServices = async () => {
+        setLoadingCompanyServices(true);
+        setCompanyServicesError(null);
+        try {
+          const data = await getCompanyServices(companyId);
+          console.log("Company services fetched:", data);
+          setCompanyServices(data);
+        } catch (err) {
+          console.error("Error fetching company services:", err);
+          setCompanyServicesError("Failed to fetch company services.");
+        } finally {
+          setLoadingCompanyServices(false);
+        }
+      };
+      fetchCompanyServices();
+    }
+  }, [companyId]);
+
+  // Auto-select service from navigation state
+  useEffect(() => {
+    if (navServiceId && companyServices?.services?.length > 0) {
+      const found = companyServices.services.find(
+        (s) => String(s.ServiceDetailID) === String(navServiceId)
+      );
+      if (found && (!selectedService || selectedService.ServiceDetailID !== found.ServiceDetailID)) {
+        setSelectedService(found);
+      }
+    }
+  }, [navServiceId, companyServices, selectedService]);
+
+  // Fetch tasks and approval status for Task tab
+  useEffect(() => {
+    const serviceCompanyId = selectedService?.CompanyID || selectedService?.companyId || companyId;
+
+    if (activeTab === "Task" && serviceCompanyId && selectedService?.ServiceDetailID) {
+      
+      const fetchTasksAndApproval = async () => {
+        setLoadingTasks(true);
+        setTasksError(null);
+        try {
+          // Fetch tasks
+          const data = await getTasks({
+            ServiceDetailID: selectedService.ServiceDetailID,
+            QuoteID: selectedService.QuoteID || navQuoteId,
+          });
+          setTasksFromApi(data || []);
+console.log(selectedService, "selectedService.companyId");
+
+          // Fetch approval status
+          const respFields = await getResponseFieldsBySerId(selectedService.ServiceID);
+
+          const allFields = (respFields.results || []).flatMap((r) => r.fields || []);
+
+                          console.log("checking1",{allFields});
+
+          // If any field has reject === 1, status is Not Approved
+        const isRejected = allFields.some((f) => f.reject === 1);
+setApprovalStatus(isRejected ? "Not Approved" : "Approved");
+        } catch (err) {
+          setTasksError("Failed to fetch tasks from /Task API.");
+          setApprovalStatus(null);
+        } finally {
+          setLoadingTasks(false);
+        }
+      };
+      fetchTasksAndApproval();
+    } else if (activeTab === "Task") {
+            console.log("checking2");
+
+      setTasksFromApi([]);
+      setApprovalStatus(null);
+    }
+  }, [activeTab, selectedService, companyId, navQuoteId]);
+
+  // Approval status state
+
+  // Fetch documents/response fields
+  useEffect(() => {
+    const serviceCompanyId = selectedService?.CompanyID || selectedService?.companyId || companyId;
+    
+    if (activeTab === "Documents" && serviceCompanyId && selectedService?.ServiceID) {
       setLoadingDocuments(true);
       setDocumentsError(null);
-      console.log(
-        "[Documents] Fetching response fields for companyId:",
-        serviceCompanyId,
-      );
-      getResponseFieldsBySerId(service.ServiceID)
+      
+      getResponseFieldsBySerId(selectedService.ServiceID)
         .then((data) => {
           console.log("[Documents] getResponseFields API response:", data);
-          // Flatten all fields from all results
           const allFields = (data.results || []).flatMap((r) => r.fields || []);
           let verified = [];
+          
           if (activeTab === "Documents") {
-            verified = allFields.filter(
-              (f) => f.verify === 1 || f.verify === 0,
-            );
+            verified = allFields.filter((f) => f.verify === 1 || f.verify === 0);
           } else if (activeTab === "Task") {
             verified = allFields.filter((f) => f.verify === 1);
           } else {
             verified = allFields.filter((f) => f.verify === 0);
           }
+          
           setVerifiedFields(verified);
           setLoadingDocuments(false);
         })
@@ -261,40 +253,31 @@ export default function ServiceSelection() {
       setVerifiedFields([]);
     }
   }, [activeTab, selectedService]);
-  useEffect(() => {
-    const fetchFields = async () => {
-      console.log("DDDDD", activeTab);
-      // if (!['Documents', 'Task'].includes(activeTab) || !service?.CompanyID) return;
-      // setResponseFieldsLoading(true);
-      try {
-        console.log("Serrrr", { service });
-        const response = await getResponseFields(service.CompanyID);
-        setResponseFields(response.results || []);
-      } catch (error) {
-        console.error("Error fetching response fields:", error);
-      } finally {
-        // setResponseFieldsLoading(false);
-      }
-    };
-    fetchFields();
-  }, [service?.CompanyID]);
-  // Fetch deliverables when selectedService changes and Deliverables tab is active
-  const [serviceDeliverables, setServiceDeliverables] = useState(null);
-  const [loadingDeliverables, setLoadingDeliverables] = useState(false);
-  const [deliverablesError, setDeliverablesError] = useState(null);
+
+  // Fetch response fields by company ID
+  const fetchFields = async () => {
+    if (!selectedService?.ServiceID) return;
+    setResponseFieldsLoading(true);
+    try {
+      const response = await getResponseFieldsBySerId(selectedService.ServiceID);
+      setResponseFields(response.results || []);
+    } catch (error) {
+      console.error("Error fetching response fields:", error);
+    } finally {
+      setResponseFieldsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (
-      activeTab === "Deliverables" &&
-      selectedService &&
-      selectedService.ServiceDetailID
-    ) {
+    fetchFields();
+  }, [selectedService?.ServiceID]);
+
+  // Fetch deliverables
+  useEffect(() => {
+    if (activeTab === "Deliverables" && selectedService?.ServiceDetailID) {
       setLoadingDeliverables(true);
       setDeliverablesError(null);
-      console.log(
-        "[Deliverables] Fetching for ServiceDetailID:",
-        selectedService.ServiceDetailID,
-      );
+      
       getServiceDeliverablesByServiceDetailId(selectedService.ServiceDetailID)
         .then((data) => {
           console.log("[Deliverables] API response:", data);
@@ -311,25 +294,55 @@ export default function ServiceSelection() {
     }
   }, [activeTab, selectedService]);
 
-  // Fetch formConfig when selectedService changes
+  // Fetch formConfig
   useEffect(() => {
-    if (selectedService && selectedService.ServiceID) {
+    if (selectedService?.ServiceID) {
       setFormConfig([]);
       serviceFormMapping(selectedService.ServiceID)
         .then((res) => {
           if (res?.data) setFormConfig(res.data);
           else if (Array.isArray(res)) setFormConfig(res);
+          setService(selectedService);
         })
         .catch((err) => {
-          console.log(err);
-          // Optionally handle error
+          console.error("Error fetching form mapping:", err);
           setFormConfig([]);
         });
-      setService(selectedService);
     }
   }, [selectedService]);
 
-  // Form for collecting data
+  // Helper functions
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Approved":
+        return "bg-green-100 text-green-700";
+      case "In review":
+        return "bg-yellow-100 text-yellow-700";
+      case "Not Approved":
+        return "bg-red-100 text-red-700";
+      case "Disable":
+        return "bg-gray-100 text-gray-500";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
+  // const getProgressBarColor = (progress) => {
+  //   if (progress >= 80) return "bg-green-400";
+  //   if (progress >= 60) return "bg-yellow-400";
+  //   if (progress >= 40) return "bg-orange-400";
+  //   return "bg-red-400";
+  // };
+
+  const filteredCurrentTasks = statusFilter === "All"
+    ? currentTasks
+    : currentTasks.filter((task) => task.status === statusFilter);
+  
+  const filteredUpcomingTasks = statusFilter === "All"
+    ? upcomingTasks
+    : upcomingTasks.filter((task) => task.status === statusFilter);
+
+  // Collect Data Form Component
   const CollectDataForm = ({ task, onBack }) => {
     const [form, setForm] = useState({
       name: "",
@@ -344,11 +357,7 @@ export default function ServiceSelection() {
 
     const handleChange = (e) => {
       const { name, value, files } = e.target;
-      if (
-        name === "fileAadhaar" ||
-        name === "filePan" ||
-        name === "fileOther"
-      ) {
+      if (name === "fileAadhaar" || name === "filePan" || name === "fileOther") {
         setForm({ ...form, [name]: files[0] });
       } else {
         setForm({ ...form, [name]: value });
@@ -357,7 +366,6 @@ export default function ServiceSelection() {
 
     const handleSubmit = (e) => {
       e.preventDefault();
-      // Handle form submission logic here
       onBack();
     };
 
@@ -389,6 +397,7 @@ export default function ServiceSelection() {
           </div>
         </div>
         <form onSubmit={handleSubmit}>
+          {/* Form fields - keep as is */}
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Name
           </label>
@@ -519,7 +528,7 @@ export default function ServiceSelection() {
     );
   };
 
-  // Form for adding a note when not approved
+  // Note Form Component
   const NoteForm = ({ task, onBack }) => {
     const [form, setForm] = useState({
       name: "",
@@ -538,7 +547,6 @@ export default function ServiceSelection() {
 
     const handleReAddSubmit = (e) => {
       e.preventDefault();
-      // Handle re-adding form logic here
       onBack();
     };
 
@@ -564,13 +572,16 @@ export default function ServiceSelection() {
           </div>
           <div className="text-sm text-gray-700 mb-2 font-semibold">
             Why not approved?
+
+
+
+
           </div>
           <div className="bg-gray-100 text-gray-700 rounded-lg p-3 mb-4">
             Required data items are missing. Please re-submit with all required
             information.
           </div>
         </div>
-        {/* Show re-add form directly */}
         <form onSubmit={handleReAddSubmit}>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Name
@@ -636,13 +647,12 @@ export default function ServiceSelection() {
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="bg-yellow-400 hover:bg-[#F3C625] text-gray-800 font-medium px-4 py-2 rounded-lg flex items-center gap-2"
           >
-            {selectedService && selectedService.ItemName
-              ? selectedService.ItemName
-              : "Choose Service"}
+            {selectedService?.ItemName || "Choose Service"}
             <span className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center text-white text-xs ml-2">
               ⚙
             </span>
           </button>
+          
           {/* Services Dropdown */}
           {isDropdownOpen && (
             <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
@@ -656,9 +666,7 @@ export default function ServiceSelection() {
                   <div className="p-4 text-gray-500">Loading...</div>
                 ) : companyServicesError ? (
                   <div className="p-4 text-red-500">{companyServicesError}</div>
-                ) : companyServices &&
-                  companyServices.services &&
-                  companyServices.services.length > 0 ? (
+                ) : companyServices?.services?.length > 0 ? (
                   companyServices.services.map((service) => (
                     <div
                       key={service.ServiceDetailID}
@@ -666,17 +674,17 @@ export default function ServiceSelection() {
                         setSelectedService(service);
                         setIsDropdownOpen(false);
                       }}
-                      className={`flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 ${selectedService && selectedService.ServiceDetailID === service.ServiceDetailID ? "bg-yellow-100" : ""}`}
+                      className={`flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                        selectedService?.ServiceDetailID === service.ServiceDetailID ? "bg-yellow-100" : ""
+                      }`}
                     >
                       <span className="text-2xl mr-3">🛠️</span>
                       <div>
                         <h4 className="font-medium text-gray-800">
-                          {service.ItemName ||
-                            `Service ID: ${service.ServiceID}`}
+                          {service.ItemName || `Service ID: ${service.ServiceID}`}
                         </h4>
                         <p className="text-xs text-gray-500">
-                          ServiceDetailID: {service.ServiceDetailID} | QuoteID:{" "}
-                          {service.QuoteID}
+                          ServiceDetailID: {service.ServiceDetailID} | QuoteID: {service.QuoteID}
                         </p>
                       </div>
                     </div>
@@ -689,15 +697,14 @@ export default function ServiceSelection() {
           )}
         </div>
       </div>
-      {/* {to do } */}
-      {/* GST Task Card (no dropdown here) */}
-      <div className="bg-white  rounded-2xl border border-yellow-500 shadow-lg p-6  mb-6">
-        {selectedService && selectedService.ItemName && (
+
+      {/* GST Task Card */}
+      <div className="bg-white rounded-2xl border border-yellow-500 shadow-lg p-6 mb-6">
+        {selectedService?.ItemName && (
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
             {selectedService.ItemName}
           </h2>
         )}
-        {/* Show selected service name below GST title if selected */}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {loadingTasks ? (
@@ -708,21 +715,29 @@ export default function ServiceSelection() {
             <div className="col-span-4 text-center py-6 text-red-500">
               {tasksError}
             </div>
-          ) : tasksFromApi && tasksFromApi.summary ? (
+          ) : tasksFromApi?.summary ? (
             <>
               <div className="border-r border-gray-200 pr-4">
                 <p className="text-sm text-gray-600 mb-2">Status</p>
                 <div className="flex items-center gap-2">
-                  <span className="bg-yellow-400 text-gray-800 text-xs font-medium px-2 py-1 rounded">
-                    {tasksFromApi.summary.status || "-"}
-                  </span>
+   {/* <span
+  className={`text-xs font-medium px-2 py-1 rounded ${
+    approvalStatus === "Approved"
+      ? "bg-green-100 text-green-700"
+      : approvalStatus === "Not Approved"
+      ? "bg-red-100 text-red-700"
+      : "bg-yellow-100 text-yellow-700"
+  }`}
+>
+  {approvalStatus || tasksFromApi.summary.status || "-"}
+</span> */}
                   <span className="text-lg font-semibold text-gray-800">
                     {tasksFromApi.summary.percentComplete || "-"}
                   </span>
                 </div>
               </div>
               <div className="border-r border-gray-200 pr-4">
-                <p className="text-sm text-gray-600 mb-2">Total Tasks</p>
+                <p className="text-sm text-gray-600 mb-2">Total Tasks </p>
                 <p className="text-lg font-semibold text-gray-800">
                   {tasksFromApi.summary.totalTasks || "-"}
                 </p>
@@ -736,20 +751,19 @@ export default function ServiceSelection() {
               <div className="border-r border-gray-200 pr-4">
                 <p className="text-sm text-gray-600 mb-2">Payment Due</p>
                 <p className="text-lg font-semibold text-gray-800">
-                  {tasksFromApi.summary.paymentDue !== undefined &&
-                    tasksFromApi.summary.paymentDue !== null
+                  {tasksFromApi.summary.paymentDue !== undefined && tasksFromApi.summary.paymentDue !== null
                     ? `₹${tasksFromApi.summary.paymentDue}`
                     : "-"}
                 </p>
               </div>
             </>
-          ) : tasksFromApi && tasksFromApi.length > 0 ? (
+          ) : tasksFromApi?.length > 0 ? (
             <>
               <div className="border-r border-gray-200 pr-4">
                 <p className="text-sm text-gray-600 mb-2">Status</p>
                 <div className="flex items-center gap-2">
                   <span className="bg-yellow-400 text-gray-800 text-xs font-medium px-2 py-1 rounded">
-                    {tasksFromApi[0].status || "-"}
+                   {approvalStatus || tasksFromApi[0].status || "-"}
                   </span>
                   <span className="text-lg font-semibold text-gray-800">
                     {tasksFromApi[0].percentComplete || "-"}
@@ -771,8 +785,7 @@ export default function ServiceSelection() {
               <div className="border-r border-gray-200 pr-4">
                 <p className="text-sm text-gray-600 mb-2">Payment Due</p>
                 <p className="text-lg font-semibold text-gray-800">
-                  {tasksFromApi[0].paymentDue !== undefined &&
-                    tasksFromApi[0].paymentDue !== null
+                  {tasksFromApi[0].paymentDue !== undefined && tasksFromApi[0].paymentDue !== null
                     ? `₹${tasksFromApi[0].paymentDue}`
                     : "-"}
                 </p>
@@ -786,7 +799,7 @@ export default function ServiceSelection() {
         </div>
       </div>
 
-      {/* Navigation Tabs & Status Filter in one line */}
+      {/* Navigation Tabs */}
       <div className="border-t border-[#F3C625] mt-12 mb-6">
         <div className="flex items-center justify-between mt-6">
           <div className="flex space-x-8">
@@ -823,74 +836,101 @@ export default function ServiceSelection() {
               </button>
             )}
           </div>
-          {/* <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded px-2 py-1 text-sm"
-            >
-              <option>All</option>
-              <option>Approved</option>
-              <option>In review</option>
-              <option>Disable</option>
-            </select>
-          </div> */}
         </div>
       </div>
 
       {/* Tab Content */}
       {collectDataTask ? (
-        <CollectDataForm
-          task={collectDataTask}
-          onBack={() => setCollectDataTask(null)}
-        />
+        <CollectDataForm task={collectDataTask} onBack={() => setCollectDataTask(null)} />
       ) : noteTask ? (
         <NoteForm task={noteTask} onBack={() => setNoteTask(null)} />
-      ) : activeTab === "Task" ? (
-        <>
-          {/* Current Task Section */}
-          <div className="mb-8">
-            <ServiceTaskListing
-              formConfig={formConfig}
-              responseFields={responseFields}
-              serviceDetails={{
-                CompanyID: companyId,
-                ServiceID: service?.ServiceID,
-                QuoteID: service?.QuoteID,
-                OrderID: service?.OrderID,
-                submittedBy:
-                  service?.submittedBy ??
-                  getSecureItem("partnerUser")?.EmployeeID,
-              }}
-            />
-          </div>
-          {/* Upcoming Task Section */}
-        </>
+      ) : activeTab === "Task" ? (  
+        <div className="mb-8">
+          <ServiceTaskListing
+            formConfig={formConfig}
+            responseFields={responseFields}
+            serviceDetails={{
+              CompanyID: companyId,
+              ServiceID: service?.ServiceID,
+              QuoteID: service?.QuoteID,
+              OrderID: service?.OrderID,
+              submittedBy: service?.submittedBy ?? getSecureItem("partnerUser")?.EmployeeID,
+            }}
+            onTaskUpdate={fetchFields}
+          />
+        </div>
       ) : activeTab === "Documents" ? (
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Documents
-          </h3>
-          {loadingDocuments && (
-            <p className="text-gray-600">Loading documents...</p>
-          )}
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Documents</h3>
+          {loadingDocuments && <p className="text-gray-600">Loading documents...</p>}
           {documentsError && <p className="text-red-500">{documentsError}</p>}
-          {!loadingDocuments &&
-            !documentsError &&
-            verifiedFields.length > 0 && (
-              <div className="flex flex-col gap-3">
-                {verifiedFields.map((field) => (
+          {!loadingDocuments && !documentsError && verifiedFields.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {verifiedFields.map((field) => (
+                <div
+                  key={field.fieldRows_id}
+                  className="flex items-center justify-between border border-yellow-400 rounded-full px-5 py-3"
+                >
+                  <span className="text-sm text-gray-700 truncate max-w-lg">
+                    {field.field_key}
+                  </span>
+                  {field.field_type === "File" ? (
+                    <a
+                      href={field.field_text}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-4 text-gray-500 hover:text-yellow-600 flex-shrink-0"
+                      title="Download"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                    </a>
+                  ) : (
+                    <span className="ml-4 text-gray-800 font-semibold">
+                      {field.field_text}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {!loadingDocuments && !documentsError && verifiedFields.length === 0 && (
+            <p className="text-gray-600">No verified documents found.</p>
+          )}
+        </div>
+      ) : activeTab === "Deliverables" ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+          <h3 className="text-lg font-semibold text-gray-800 mb-6">Uploaded</h3>
+          {loadingDeliverables && <p className="text-gray-600">Loading deliverables...</p>}
+          {deliverablesError && <p className="text-red-500">{deliverablesError}</p>}
+          {!loadingDeliverables && !deliverablesError && Array.isArray(serviceDeliverables) && serviceDeliverables.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {serviceDeliverables.map((item) => {
+                const isFile = item.type === "file";
+                return (
                   <div
-                    key={field.fieldRows_id}
+                    key={item.id}
                     className="flex items-center justify-between border border-yellow-400 rounded-full px-5 py-3"
                   >
                     <span className="text-sm text-gray-700 truncate max-w-lg">
-                      {field.field_key}
+                      {item.label}
                     </span>
-                    {field.field_type === "File" ? (
+                    {isFile ? (
                       <a
-                        href={field.field_text}
+                        href={item.value}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="ml-4 text-gray-500 hover:text-yellow-600 flex-shrink-0"
@@ -914,83 +954,17 @@ export default function ServiceSelection() {
                       </a>
                     ) : (
                       <span className="ml-4 text-gray-800 font-semibold">
-                        {field.field_text}
+                        {item.value}
                       </span>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
-          {!loadingDocuments &&
-            !documentsError &&
-            verifiedFields.length === 0 && (
-              <p className="text-gray-600">No verified documents found.</p>
-            )}
-        </div>
-      ) : activeTab === "Deliverables" ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-6">Uploaded</h3>
-          {loadingDeliverables && (
-            <p className="text-gray-600">Loading deliverables...</p>
+                );
+              })}
+            </div>
           )}
-          {deliverablesError && (
-            <p className="text-red-500">{deliverablesError}</p>
+          {!loadingDeliverables && !deliverablesError && Array.isArray(serviceDeliverables) && serviceDeliverables.length === 0 && (
+            <p className="text-gray-600">No deliverables available yet.</p>
           )}
-          {!loadingDeliverables &&
-            !deliverablesError &&
-            Array.isArray(serviceDeliverables) &&
-            serviceDeliverables.length > 0 && (
-              <div className="flex flex-col gap-3">
-                {serviceDeliverables.map((item) => {
-                  const isFile = item.type === "file";
-                  return (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between border border-yellow-400 rounded-full px-5 py-3"
-                    >
-                      <span className="text-sm text-gray-700 truncate max-w-lg">
-                        {item.label}
-                      </span>
-                      {isFile ? (
-                        <a
-                          href={item.value}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-4 text-gray-500 hover:text-yellow-600 flex-shrink-0"
-                          title="Download"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                          </svg>
-                        </a>
-                      ) : (
-                        <span className="ml-4 text-gray-800 font-semibold">
-                          {item.value}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          {!loadingDeliverables &&
-            !deliverablesError &&
-            Array.isArray(serviceDeliverables) &&
-            serviceDeliverables.length === 0 && (
-              <p className="text-gray-600">No deliverables available yet.</p>
-            )}
         </div>
       ) : null}
 

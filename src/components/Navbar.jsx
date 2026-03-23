@@ -7,6 +7,7 @@ import SigninModal from "./Modals/SigninModal";
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showSignin, setShowSignin] = useState(false);
@@ -17,43 +18,35 @@ export default function Navbar() {
     { label: "Product", path: "/products" },
     { label: "Bizpole One", path: "/bizpoleone" },
     { label: "Partners", path: "/partners" },
-    // { label: "Companies", path: "/companies" },
   ];
 
-
-
-
-  // ✅ Auto-open Signin Modal if redirected from Compliance page
+  // Auto-open Signin Modal
   useEffect(() => {
     if (location.state?.openSigninModal) {
       setShowSignin(true);
-      // Prevent re-trigger on refresh
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
-
-
-  // Detect scroll
+  // Scroll effect
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 40);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Check for token in localStorage
+  // Token check
   useEffect(() => {
     const token = localStorage.getItem("token");
     setHasToken(!!token);
   }, []);
 
-
+  // Referral tracking
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
-
     if (ref) {
       localStorage.setItem("PartnerID", ref);
     }
@@ -66,12 +59,17 @@ export default function Navbar() {
 
   return (
     <>
+      {/* NAVBAR */}
       <nav
-        className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b border-gray-200 ${isScrolled ? "bg-white shadow-md" : "bg-transparent"
-          }`}
+        className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-7xl transition-all duration-500 rounded-4xl
+        ${
+          isScrolled
+            ? "bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200"
+            : "bg-white/30 backdrop-blur-md border border-white/20"
+        }`}
       >
-        <div className="container mx-auto px-4 flex items-center justify-between py-4 md:py-5">
-          {/* Logo */}
+        <div className="px-6 py-3 flex items-center justify-between">
+          {/* LOGO */}
           <div
             onClick={() => navigate("/")}
             className="cursor-pointer flex items-center"
@@ -79,177 +77,146 @@ export default function Navbar() {
             <img
               src="/Images/logo.webp"
               alt="Bizpole Logo"
-              className="h-12 md:h-14 lg:h-16"
+              className="h-10"
             />
           </div>
 
-          {/* Desktop Menu */}
-          <ul className="navitems hidden md:flex gap-6 lg:gap-10 xl:gap-12 font-medium text-sm md:text-base lg:text-lg">
-            {navItems.map((item, index) => (
-              <li key={index}>
-                <button
-                  onClick={() => handleNavigate(item.path)}
-                  className={`transition navli cursor-pointer ${isScrolled
-                    ? "text-gray-900 hover:text-black"
-                    : "text-gray-600 hover:text-gray-800"
+          {/* DESKTOP MENU */}
+          <ul className="hidden md:flex items-center gap-8 font-medium text-sm">
+            {navItems.map((item, index) => {
+              const isActive = location.pathname === item.path;
+
+              return (
+                <li key={index} className="relative">
+                  <button
+                    onClick={() => handleNavigate(item.path)}
+                    className={`transition-all duration-300 ${
+                      isActive
+                        ? "text-black"
+                        : "text-gray-600 hover:text-black"
                     }`}
-                >
-                  {item.label}
-                </button>
-              </li>
-            ))}
+                  >
+                    {item.label}
+                  </button>
+
+                  {/* Active underline */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-underline"
+                      className="absolute -bottom-2 left-0 right-0 h-[2px] bg-black rounded-full"
+                    />
+                  )}
+                </li>
+              );
+            })}
           </ul>
 
-          {/* Right Side Buttons */}
-          <div className="hidden md:flex items-center gap-3 lg:gap-4 xl:gap-6">
+          {/* RIGHT SIDE */}
+          <div className="hidden md:flex items-center gap-3">
             {hasToken ? (
-              // ✅ If token found → show Go to Dashboard
               <motion.button
-                whileHover="hover"
-                initial="rest"
-                animate="rest"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => navigate("/dashboard/bizpoleone")}
-                className="relative overflow-hidden px-4 lg:px-6 py-2 text-sm lg:text-base font-medium rounded-full cursor-pointer bg-[#F3C625] text-white shadow-md"
+                className="px-5 py-2 rounded-full bg-black text-white text-sm font-medium shadow-md"
               >
-                <motion.span
-                  variants={{
-                    rest: { width: "0%", opacity: 0 },
-                    hover: { width: "100%", opacity: 1 },
-                  }}
-                  transition={{ duration: 0.4, ease: "easeInOut" }}
-                  className="absolute left-1/2 top-0 h-full bg-[#000] -translate-x-1/2"
-                />
-                <span className="relative z-10">Go Dashboard</span>
+                Dashboard →
               </motion.button>
             ) : (
               <>
-                {/* Sign In Button */}
+                {/* Sign In */}
                 <motion.button
-                  whileHover="hover"
-                  initial="rest"
-                  animate="rest"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setShowSignin(true)}
-                  className="relative overflow-hidden px-4 lg:px-6 py-2 text-sm lg:text-base font-medium rounded-full cursor-pointer bg-[#fbbf24] text-black"
+                  className="px-5 py-2 rounded-full text-sm font-medium text-gray-700 hover:text-black"
                 >
-                  <motion.span
-                    variants={{
-                      rest: { width: "0%", opacity: 0 },
-                      hover: { width: "100%", opacity: 1 },
-                    }}
-                    transition={{ duration: 0.4, ease: "easeInOut" }}
-                    className={`absolute left-1/2 top-0 h-full ${isScrolled ? "bg-white" : "bg-[#fbbf24]"
-                      } -translate-x-1/2`}
-                  />
-                  <span className="relative z-10">Sign In</span>
+                  Sign In
                 </motion.button>
 
-                {/* Get Start Your Business */}
+                {/* CTA */}
                 <motion.button
-                  whileHover="hover"
-                  initial="rest"
-                  animate="rest"
+                  whileHover={{ scale: 1.07 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => navigate("/startbusiness")}
-                  className="relative overflow-hidden px-4 lg:px-6 py-2 text-sm lg:text-base font-semibold rounded-full text-black cursor-pointer bg-white shadow-md"
+                  className="px-6 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-black font-semibold shadow-lg"
                 >
-                  <motion.span
-                    variants={{
-                      rest: { width: "0%", opacity: 0 },
-                      hover: { width: "100%", opacity: 1 },
-                    }}
-                    transition={{ duration: 0.4, ease: "easeInOut" }}
-                    className="absolute left-1/2 top-0 h-full bg-[#fbbf24] -translate-x-1/2"
-                  />
-                  <span className="relative z-10">
-                    Get Start Your <span className="font-bold">Business</span>
-                  </span>
+                  Get Started Business
                 </motion.button>
               </>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* MOBILE BUTTON */}
           <button
-            className={`md:hidden ${isScrolled ? "text-gray-800" : "text-black"
-              }`}
+            className="md:hidden text-black"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+            {mobileMenuOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
           </button>
         </div>
 
-        {/* Mobile Dropdown */}
+        {/* MOBILE MENU */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="md:hidden bg-white shadow-lg"
+              className="md:hidden mt-3 mx-3 rounded-2xl bg-white shadow-xl border border-gray-200"
             >
-              <ul className="flex flex-col px-6 py-4 space-y-4 text-gray-800 text-base">
+              <ul className="flex flex-col p-6 space-y-5 text-gray-800">
                 {navItems.map((item, index) => (
                   <li key={index}>
                     <button
                       onClick={() => handleNavigate(item.path)}
-                      className="w-full text-left hover:text-black transition"
+                      className="w-full text-left text-lg font-medium hover:text-black transition"
                     >
                       {item.label}
                     </button>
                   </li>
                 ))}
 
-                {/* Mobile Conditional Buttons */}
-                <li>
-                  {hasToken ? (
-                    <motion.button
-                      whileHover="hover"
-                      initial="rest"
-                      animate="rest"
-                      onClick={() => {
-                        navigate("/dashboard");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="relative overflow-hidden w-full py-2 rounded-full bg-[#F3C625] text-white font-medium"
-                    >
-                      <motion.span
-                        variants={{
-                          rest: { width: "0%", opacity: 0 },
-                          hover: { width: "100%", opacity: 1 },
-                        }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        className="absolute left-1/2 top-0 h-full bg-[#F3C625] text-black -translate-x-1/2"
-                      />
-                      <span className="relative z-10">Go to Dashboard</span>
-                    </motion.button>
-                  ) : (
-                    <motion.button
-                      whileHover="hover"
-                      initial="rest"
-                      animate="rest"
+                {/* MOBILE CTA */}
+                {hasToken ? (
+                  <button
+                    onClick={() => {
+                      navigate("/dashboard");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="mt-4 w-full py-3 rounded-full bg-black text-white font-medium"
+                  >
+                    Dashboard
+                  </button>
+                ) : (
+                  <>
+                    <button
                       onClick={() => setShowSignin(true)}
-                      className="relative overflow-hidden w-full py-2 rounded-full bg-[#fbbf24] text-black font-medium"
+                      className="w-full py-3 rounded-full border border-gray-300"
                     >
-                      <motion.span
-                        variants={{
-                          rest: { width: "0%", opacity: 0 },
-                          hover: { width: "100%", opacity: 1 },
-                        }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        className="absolute left-1/2 top-0 h-full bg-[#facc15] -translate-x-1/2"
-                      />
-                      <span className="relative z-10">Sign In</span>
-                    </motion.button>
-                  )}
-                </li>
+                      Sign In
+                    </button>
+
+                    <button
+                      onClick={() => navigate("/startbusiness")}
+                      className="w-full py-3 rounded-full bg-yellow-400 font-semibold"
+                    >
+                      Get Started
+                    </button>
+                  </>
+                )}
               </ul>
             </motion.div>
           )}
         </AnimatePresence>
       </nav>
 
-      {/* ✅ Signin Modal */}
-      <SigninModal isOpen={showSignin} onClose={() => setShowSignin(false)} />
+      {/* SIGNIN MODAL */}
+      <SigninModal
+        isOpen={showSignin}
+        onClose={() => setShowSignin(false)}
+      />
     </>
   );
 }

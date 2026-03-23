@@ -10,19 +10,28 @@ import {
   FiCalendar,
   FiDollarSign,
   FiCheckCircle,
-  FiAlertCircle
+  FiAlertCircle,
+  FiRefreshCw
 } from 'react-icons/fi';
-import { getOrdersByCompanyId, getInvoicesForOrder } from '../api/Orders/Order';
-import { getCompanyIdFromStorage } from '../api/Orders/Order';
+import { getCompanyInvoices } from '../api/Companyinvoice';
+import { getSecureItem } from '../utils/secureStorage';
+import CryptoJS from "crypto-js";
+import { useNavigate } from 'react-router-dom';
 
 const InvoiceProfile = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [invoices, setInvoices] = useState([]);
-  const [orders, setOrders] = useState([]); // New state for orders
-  const [selectedOrderId, setSelectedOrderId] = useState(null); // State for selected order
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    totalInvoices: 0,
+    totalAmount: 0,
+    paidInvoices: 0,
+    pendingInvoices: 0,
+    overdueInvoices: 0
+  });
 
   // Animation variants
   const containerVariants = {
@@ -47,54 +56,43 @@ const InvoiceProfile = () => {
     }
   };
 
+  // Fetch invoices on component mount
   useEffect(() => {
-    const fetchOrdersAndInvoices = async () => {
-      setLoading(true);
-      try {
-        // Fetch orders first
-        const fetchedOrders = await getOrdersByCompanyId({
-          companyId: getCompanyIdFromStorage(), // Dynamically fetch companyId
-          limit: 10,
-          page: 1,
-          IsIndividual: 1, // Ensure IsIndividual is passed correctly
-        });
-
-        // Map orders to extract OrderID and other relevant details
-        const ordersWithOrderID = fetchedOrders.map((order) => ({
-          id: order.OrderID, // Extract OrderID
-          name: order.CompanyName, // Example: Use CompanyName as the name
-          totalAmount: order.totalAmount, // Include totalAmount if needed
-          ...order, // Spread other properties if required
-        }));
-
-        setOrders(ordersWithOrderID);
-
-        // Fetch invoices for each order
-        const ordersWithInvoices = await Promise.all(
-          ordersWithOrderID.map(async (order) => {
-            try {
-              console.log("Fetching invoices for orderId:", order.id);
-              const invoices = await getInvoicesForOrder(order.id);
-              return { ...order, invoices };
-            } catch (err) {
-              console.error(`Error fetching invoices for orderId ${order.id}:`, err);
-              return { ...order, invoices: [] }; // Return empty invoices on error
-            }
-          })
-        );
-
-        setOrders(ordersWithInvoices);
-      } catch (err) {
-        console.error("Error fetching orders or invoices:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrdersAndInvoices();
+    fetchInvoices();
   }, []);
 
+  const fetchInvoices = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const selectedCompany = getSecureItem("selectedCompany");
+      const companyId = selectedCompany?.CompanyID;
+      
+      if (!companyId) {
+        throw new Error("No company selected. Please select a company first.");
+      }
+
+      const response = await getCompanyInvoices({ 
+        companyId, 
+        limit: 50, 
+        page: 1 
+      });
+
+      if (response.success && Array.isArray(response.data)) {
+        setInvoices(response.data);
+        calculateStats(response.data);
+      } else {
+        setInvoices([]);
+        calculateStats([]);
+      }
+    } catch (err) {
+      console.error("Error fetching invoices:", err);
+      setError(err.message || "Failed to fetch invoices. Please try again.");
+      setInvoices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
   // const handleOrderChange = async (orderId) => {
   //   setSelectedOrderId(orderId);
   //   setLoading(true);
@@ -108,20 +106,63 @@ const InvoiceProfile = () => {
   //   }
   // };
 
-  const fetchInvoices = async () => {
-    setLoading(true);
+  const calculateStats = (invoiceData) => {
+    const totalInvoices = invoiceData.length;
+    const totalAmount = invoiceData.reduce((sum, inv) => {
+      const amount = parseFloat(inv.InvoiceValue || inv.OrderValue || inv.InvoiceTotal || 0);
+      return sum + (isNaN(amount) ? 0 : amount);
+    }, 0);
+    
+    const paidInvoices = invoiceData.filter(inv => 
+      inv.InvoiceStatus?.toLowerCase() === 'paid' || 
+      inv.Status?.toLowerCase() === 'paid'
+    ).length;
+    
+    const pendingInvoices = invoiceData.filter(inv => 
+      inv.InvoiceStatus?.toLowerCase() === 'pending' || 
+      inv.Status?.toLowerCase() === 'pending'
+    ).length;
+    
+    const overdueInvoices = invoiceData.filter(inv => 
+      inv.InvoiceStatus?.toLowerCase() === 'overdue' || 
+      inv.Status?.toLowerCase() === 'overdue'
+    ).length;
+
+    setStats({
+      totalInvoices,
+      totalAmount,
+      paidInvoices,
+      pendingInvoices,
+      overdueInvoices
+    });
+  };
+
+  const handleViewInvoice = (invoice) => {
     try {
-      if (selectedOrderId) {
-        const fetchedInvoices = await getInvoicesForOrder(selectedOrderId);
-        setInvoices(fetchedInvoices);
-      } else {
-        setError("No order selected.");
+      const secret = import.meta.env.VITE_QUOTE_LINK_SECRET || "default_secret";
+      const orderId = invoice.OrderID || invoice.id;
+      
+      if (!orderId) {
+        console.error("No Order ID found for invoice");
+        return;
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+
+      const encryptedOrderId = encodeURIComponent(
+        CryptoJS.AES.encrypt(String(orderId), secret).toString()
+      );
+      
+      // Pass invoice data via state
+      navigate(`/profile/invoice-preview/${encryptedOrderId}`, {
+        state: { invoiceData: invoice }
+      });
+    } catch (error) {
+      console.error("Error encrypting order ID:", error);
     }
+  };
+
+  const handleDownloadInvoice = (invoice) => {
+    // Implement download functionality
+    console.log("Download invoice:", invoice);
   };
 
   const faqs = [
@@ -144,21 +185,31 @@ const InvoiceProfile = () => {
   };
 
   const formatCurrency = (amount) => {
-    if (!amount) return '-';
+    if (!amount && amount !== 0) return '₹0.00';
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount)) return '₹0.00';
+    
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 2
-    }).format(amount);
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(numAmount);
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '-';
+      return date.toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch {
+      return '-';
+    }
   };
 
   const getStatusColor = (status) => {
@@ -166,14 +217,31 @@ const InvoiceProfile = () => {
       case 'paid':
         return 'bg-green-100 text-green-800 border border-green-200';
       case 'pending':
-      case 'upcoming':
         return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
       case 'overdue':
         return 'bg-red-100 text-red-800 border border-red-200';
-      default:
+      case 'cancelled':
         return 'bg-gray-100 text-gray-800 border border-gray-200';
+      default:
+        return 'bg-blue-100 text-blue-800 border border-blue-200';
     }
   };
+
+  const getNextInvoice = () => {
+    if (!invoices.length) return null;
+    
+    const now = new Date();
+    const futureInvoices = invoices
+      .filter(inv => {
+        const invDate = new Date(inv.InvoiceDate || inv.OrderDate);
+        return invDate > now && inv.InvoiceStatus?.toLowerCase() !== 'paid';
+      })
+      .sort((a, b) => new Date(a.InvoiceDate) - new Date(b.InvoiceDate));
+    
+    return futureInvoices[0] || invoices[0];
+  };
+
+  const nextInvoice = getNextInvoice();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-yellow-50 p-4 md:p-6 lg:p-8">
@@ -182,21 +250,34 @@ const InvoiceProfile = () => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 flex justify-between items-center"
         >
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-            Invoice Management
-          </h1>
-          <p className="text-gray-600">
-            Manage and view all invoices for Order #{selectedOrderId}
-          </p>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+              Invoice Management
+            </h1>
+            <p className="text-gray-600">
+              Manage and view all invoices for your company
+            </p>
+          </div>
+          
+          {/* Refresh Button */}
+          <motion.button
+            whileHover={{ scale: 1.05, rotate: 180 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={fetchInvoices}
+            className="p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all border-2 border-yellow-100"
+            disabled={loading}
+          >
+            <FiRefreshCw className={`w-5 h-5 text-yellow-600 ${loading ? 'animate-spin' : ''}`} />
+          </motion.button>
         </motion.div>
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-4 mb-8">
           {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'invoices', label: 'Invoices' },
+            { id: 'overview', label: 'Overview', icon: FiEye },
+            { id: 'invoices', label: 'Invoices', icon: FiFileText },
           ].map((tab) => (
             <motion.button
               key={tab.id}
@@ -208,6 +289,7 @@ const InvoiceProfile = () => {
                 : 'bg-white text-gray-600 hover:text-yellow-600 hover:bg-yellow-50 border-2 border-yellow-100'
                 }`}
             >
+              <tab.icon className="w-4 h-4" />
               {tab.label}
               {activeTab === tab.id && (
                 <motion.div
@@ -240,7 +322,7 @@ const InvoiceProfile = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Total Invoices</p>
-                      <p className="text-2xl font-bold text-gray-900">{invoices.length}</p>
+                      <p className="text-2xl font-bold text-gray-900">{stats.totalInvoices}</p>
                     </div>
                     <div className="p-3 bg-yellow-50 rounded-full">
                       <FiFileText className="w-6 h-6 text-yellow-500" />
@@ -256,7 +338,7 @@ const InvoiceProfile = () => {
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Total Amount</p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {formatCurrency(invoices.reduce((sum, inv) => sum + (parseFloat(inv.InvoiceTotal) || 0), 0))}
+                        {formatCurrency(stats.totalAmount)}
                       </p>
                     </div>
                     <div className="p-3 bg-green-50 rounded-full">
@@ -272,12 +354,27 @@ const InvoiceProfile = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Paid Invoices</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {invoices.filter(inv => inv.Status?.toLowerCase() === 'paid').length}
-                      </p>
+                      <p className="text-2xl font-bold text-gray-900">{stats.paidInvoices}</p>
                     </div>
                     <div className="p-3 bg-blue-50 rounded-full">
                       <FiCheckCircle className="w-6 h-6 text-blue-500" />
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div 
+                  variants={itemVariants}
+                  className="bg-white rounded-3xl p-6 border-2 border-yellow-100 shadow-lg"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Pending/Overdue</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {stats.pendingInvoices + stats.overdueInvoices}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-red-50 rounded-full">
+                      <FiAlertCircle className="w-6 h-6 text-red-500" />
                     </div>
                   </div>
                 </motion.div>
@@ -309,15 +406,16 @@ const InvoiceProfile = () => {
                     <div className="p-12 text-center">
                       <FiFileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500 mb-2">No invoices found</p>
-                      <p className="text-gray-400 text-sm">There are no invoices for this order yet.</p>
+                      <p className="text-gray-400 text-sm">There are no invoices for this company yet.</p>
                     </div>
                   ) : (
                     <table className="w-full">
                       <thead>
                         <tr className="border-b-2 border-yellow-50 bg-yellow-50/50">
+                          <th className="text-left py-5 px-6 text-sm font-semibold text-gray-700">Invoice Code</th>
                           <th className="text-left py-5 px-6 text-sm font-semibold text-gray-700">Invoice Date</th>
-                          <th className="text-left py-5 px-6 text-sm font-semibold text-gray-700">Description</th>
-                          <th className="text-left py-5 px-6 text-sm font-semibold text-gray-700">Due Date</th>
+                          <th className="text-left py-5 px-6 text-sm font-semibold text-gray-700">Company Name</th>
+                          <th className="text-left py-5 px-6 text-sm font-semibold text-gray-700">Customer</th>
                           <th className="text-left py-5 px-6 text-sm font-semibold text-gray-700">Status</th>
                           <th className="text-left py-5 px-6 text-sm font-semibold text-gray-700">Total Amount</th>
                           <th className="text-right py-5 px-6 text-sm font-semibold text-gray-700">Actions</th>
@@ -331,48 +429,62 @@ const InvoiceProfile = () => {
                             className="border-b border-gray-100 hover:bg-yellow-50/30 transition-colors"
                           >
                             <td className="py-5 px-6">
+                              <span className="text-sm font-medium text-gray-900">
+                                {invoice.InvoiceCode || invoice.invoiceCode || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="py-5 px-6">
                               <div className="flex items-center gap-3">
                                 <div className="p-2 bg-yellow-100 rounded-full">
                                   <FiCalendar className="w-4 h-4 text-yellow-600" />
                                 </div>
                                 <span className="text-sm font-medium text-gray-900">
-                                  {formatDate(invoice.InvoiceDate || invoice.date)}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="py-5 px-6">
-                              <div className="flex items-center gap-3">
-                                <FiFileText className="text-yellow-500 flex-shrink-0" />
-                                <span className="text-sm text-gray-700">
-                                  {invoice.InvoiceDescription || invoice.description || 'Invoice'}
+                                  {formatDate(invoice.InvoiceDate || invoice.invoiceDate)}
                                 </span>
                               </div>
                             </td>
                             <td className="py-5 px-6">
                               <span className="text-sm text-gray-700">
-                                {formatDate(invoice.DueDate || invoice.dueDate)}
+                                {invoice.CompanyName || invoice.companyName || '-'}
                               </span>
                             </td>
                             <td className="py-5 px-6">
-                              <span className={`inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold ${getStatusColor(invoice.Status || invoice.status)}`}>
-                                {invoice.Status || invoice.status || 'Unknown'}
+                              <span className="text-sm text-gray-700">
+                                {invoice.PrimaryCustomer || invoice.customerName || '-'}
+                              </span>
+                            </td>
+                            <td className="py-5 px-6">
+                              <span className={`inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold ${getStatusColor(invoice.InvoiceStatus || invoice.Status)}`}>
+                                {invoice.InvoiceStatus || invoice.Status || 'Unknown'}
                               </span>
                             </td>
                             <td className="py-5 px-6">
                               <span className="text-sm font-semibold text-gray-900">
-                                {formatCurrency(invoice.InvoiceTotal || invoice.amount)}
+                                {formatCurrency(invoice.InvoiceValue || invoice.OrderValue || invoice.InvoiceTotal || invoice.amount)}
                               </span>
                             </td>
                             <td className="py-5 px-6">
                               <div className="flex items-center justify-end gap-2">
-                                <button className="p-2 hover:bg-yellow-100 rounded-full transition-colors">
-                                  <FiEye className="w-4 h-4 text-gray-600" />
+                                <button
+                                  onClick={() => handleViewInvoice(invoice)}
+                                  className="p-2 hover:bg-yellow-100 rounded-full transition-colors group"
+                                  title="View Invoice"
+                                >
+                                  <FiEye className="w-4 h-4 text-gray-600 group-hover:text-yellow-600" />
                                 </button>
-                                <button className="p-2 hover:bg-yellow-100 rounded-full transition-colors">
-                                  <FiDownload className="w-4 h-4 text-gray-600" />
+                                <button 
+                                  onClick={() => handleDownloadInvoice(invoice)}
+                                  className="p-2 hover:bg-yellow-100 rounded-full transition-colors group"
+                                  title="Download Invoice"
+                                >
+                                  <FiDownload className="w-4 h-4 text-gray-600 group-hover:text-yellow-600" />
                                 </button>
-                                <button className="p-2 hover:bg-yellow-100 rounded-full transition-colors">
-                                  <FiChevronRight className="w-4 h-4 text-gray-600" />
+                                <button 
+                                  onClick={() => handleViewInvoice(invoice)}
+                                  className="p-2 hover:bg-yellow-100 rounded-full transition-colors group"
+                                  title="View Details"
+                                >
+                                  <FiChevronRight className="w-4 h-4 text-gray-600 group-hover:text-yellow-600" />
                                 </button>
                               </div>
                             </td>
@@ -401,25 +513,44 @@ const InvoiceProfile = () => {
                 variants={itemVariants}
                 className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-3xl shadow-xl p-8 text-white"
               >
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="text-sm font-medium text-white/90 mb-2">Next Invoice</h3>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-bold">₹2,000.00</span>
-                      <span className="text-sm text-white/80">due December 8, 2025</span>
+                {nextInvoice ? (
+                  <>
+                    <div className="flex justify-between items-start mb-6">
+                      <div>
+                        <h3 className="text-sm font-medium text-white/90 mb-2">Next Invoice</h3>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-4xl font-bold">
+                            {formatCurrency(nextInvoice.InvoiceValue || nextInvoice.OrderValue || nextInvoice.InvoiceTotal)}
+                          </span>
+                          <span className="text-sm text-white/80">
+                            due {formatDate(nextInvoice.InvoiceDate || nextInvoice.OrderDate)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-white/70 mt-2">
+                          {nextInvoice.InvoiceCode || nextInvoice.invoiceCode || 'Invoice'}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-white/20 rounded-full">
+                        <FiCalendar className="w-6 h-6" />
+                      </div>
                     </div>
-                    <p className="text-sm text-white/70 mt-2">For 2 monthly seats</p>
+                    <div className="flex items-center justify-between pt-6 border-t border-white/20">
+                      <span className="text-sm">Preview invoice details</span>
+                      <button 
+                        onClick={() => handleViewInvoice(nextInvoice)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-yellow-600 rounded-full text-sm font-medium hover:bg-white/90 transition-colors"
+                      >
+                        Preview <FiChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full min-h-[200px]">
+                    <FiFileText className="w-12 h-12 text-white/60 mb-3" />
+                    <span className="text-white/80 text-lg">No upcoming invoices</span>
+                    <p className="text-white/60 text-sm mt-2">All invoices are paid and up to date</p>
                   </div>
-                  <div className="p-3 bg-white/20 rounded-full">
-                    <FiCalendar className="w-6 h-6" />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between pt-6 border-t border-white/20">
-                  <span className="text-sm">Preview invoice details</span>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-white text-yellow-600 rounded-full text-sm font-medium hover:bg-white/90 transition-colors">
-                    Preview <FiChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                )}
               </motion.div>
 
               {/* Plan Card */}
@@ -439,6 +570,18 @@ const InvoiceProfile = () => {
                   <button className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-full border-2 border-yellow-300 transition-colors">
                     View Plans
                   </button>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 mb-1">Monthly Billing</p>
+                    <p className="text-lg font-bold text-gray-900">{formatCurrency(stats.totalAmount / 12)}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 mb-1">Active Invoices</p>
+                    <p className="text-lg font-bold text-gray-900">{stats.pendingInvoices}</p>
+                  </div>
                 </div>
 
                 {/* FAQ Section */}

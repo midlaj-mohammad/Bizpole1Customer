@@ -193,6 +193,7 @@ const ServiceTaskForm = ({ task, serviceDetails, onClose, onSuccess, responseFie
 
             setStatus('success');
             if (onSuccess) onSuccess();
+            // If onSuccess is used to trigger a parent update, it will be called
             setTimeout(() => {
                 onClose();
             }, 1500);

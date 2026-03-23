@@ -240,7 +240,7 @@ const ComplianceDashboard = () => {
               {/* Action Buttons */}
               <div className="flex flex-col gap-2 w-full">
                 {companyQuotes.length > 0 && (
-                  <button className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold px-5 py-2 rounded-full transition w-full" onClick={() => handleViewDetails(companyQuotes[0])}>
+                  <button className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all w-full" onClick={() => handleViewDetails(companyQuotes[0])}>
                     View Latest Quote
                   </button>
                 )}
