@@ -591,16 +591,18 @@ const AssociateQuotes = () => {
                                         </td>
                                         <td style={{ padding: '11px 14px' }}>
                                             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                                                <button
-                                                    onClick={() => handleViewQuote(quote)}
-                                                    style={{
-                                                        padding: '5px 12px', borderRadius: 6, border: '1px solid #E5E7EB',
-                                                        background: '#fff', fontSize: 12, fontWeight: 500,
-                                                        color: '#374151', cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    Approve
-                                                </button>
+                                                {!quote.IsApproved && (
+                                                    <button
+                                                        onClick={() => handleViewQuote(quote)}
+                                                        style={{
+                                                            padding: '5px 12px', borderRadius: 6, border: '1px solid #E5E7EB',
+                                                            background: '#fff', fontSize: 12, fontWeight: 500,
+                                                            color: '#374151', cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleDownloadQuote(quote)}
                                                     style={{
