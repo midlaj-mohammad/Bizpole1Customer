@@ -124,3 +124,15 @@ export const upsertRegistrationStatus = async (registrationStatusData) => {
     throw error;
   }
 };
+
+export const getCompaniesByCustomerId = async (customerId) => {
+    try {
+        const response = await axiosInstance.post("/company/list-by-customer", {
+            CustomerID: customerId,
+        });
+        return response.data;
+    } catch (error) {
+        console.error("❌ Error in getCompaniesByCustomerId:", error);
+        throw error;
+    }
+};

@@ -13,6 +13,7 @@ import {
 import * as CustomerApi from '../../api/CustomerApi';
 import * as CompanyApi from '../../api/CompanyApi';
 import { format } from 'date-fns';
+import { getSecureItem } from '../../utils/secureStorage';
 
 const CustomerDetailView = () => {
     const { id } = useParams();
@@ -26,11 +27,6 @@ const CustomerDetailView = () => {
     const [selectedDocType, setSelectedDocType] = useState(null);
     const fileInputRef = useRef(null);
 
-
-
-
-
-
     const fetchDocuments = useCallback(async () => {
         try {
             const response = await CustomerApi.getCustomerDocuments(id);
@@ -43,17 +39,32 @@ const CustomerDetailView = () => {
         }
     }, [id]);
 
-
-
     useEffect(() => {
         const fetchCustomerDetails = async () => {
             setLoading(true);
             try {
-                const EmployeeID = localStorage.getItem('EmployeeID');
+                const user = getSecureItem("partnerUser") || {};
+                const EmployeeID = user.id || null;
                 const response = await CustomerApi.getCustomerById(id, EmployeeID);
 
+                console.log("Customer fetch response:", response.data);
+
                 if (response.data.success) {
-                    setCustomer(response.data.data);
+                    let customerData = response.data.data;
+                    
+                    // Explicitly fetch companies if not present or empty
+                    if (!customerData.Companies || customerData.Companies.length === 0) {
+                        try {
+                            const companyRes = await CompanyApi.getCompaniesByCustomerId(id);
+                            if (companyRes.success) {
+                                customerData.Companies = companyRes.data;
+                            }
+                        } catch (compErr) {
+                            console.error("Error fetching companies separately", compErr);
+                        }
+                    }
+                    
+                    setCustomer(customerData);
                 } else {
                     setError(response.data.message || "Failed to fetch customer details");
                 }
@@ -131,7 +142,6 @@ const CustomerDetailView = () => {
         };
     };
 
-
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -159,40 +169,19 @@ const CustomerDetailView = () => {
         );
     }
 
-
-    console.log("customer", customer);
-
-
     const renderSummary = () => (
         <div className="bg-white rounded-2xl p-8 border border-amber-200 shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                 <DetailItem label="First Name" value={customer.FirstName} />
                 <DetailItem label="Last Name" value={customer.LastName || '-'} />
-
-                {/* <DetailItem label="PAN Number" value={customer.PANNumber || '-'} /> */}
-                {/* <DetailItem label="Date of Birth" value={customer.DateOfBirth ? format(new Date(customer.DateOfBirth), 'dd/MM/yyyy') : '-'} /> */}
-
-                {/* <DetailItem label="Primary Company" value={customer.PrimaryCompanyName || '-'} /> */}
                 <DetailItem label="Preferred Language" value={customer.PreferredLanguage || '-'} />
-
-                {/* <DetailItem label="Customer Category" value={customer.CustomerCategory || '-'} /> */}
                 <DetailItem label="Created On" value={customer.CreatedAt ? format(new Date(customer.CreatedAt), 'dd/MM/yyyy, HH:mm:ss') : '-'} />
-
                 <DetailItem label="Updated On" value={customer.UpdatedAt ? format(new Date(customer.UpdatedAt), 'dd/MM/yyyy, HH:mm:ss') : '-'} />
                 <DetailItem label="Mobile" value={customer.Mobile} />
-
-                {/* <DetailItem label="Secondary Mobile" value={customer.SecondaryMobile || '-'} /> */}
                 <DetailItem label="Email" value={customer.Email} />
-
-                {/* <DetailItem label="Secondary Email" value={customer.SecondaryEmail || '-'} /> */}
-                {/* <DetailItem label="Address Line 1" value={customer.AddressLine1 || '-'} /> */}
-
-                {/* <DetailItem label="Address Line 2" value={customer.AddressLine2 || '-'} /> */}
                 <DetailItem label="Country" value={customer.Country || 'India'} />
-
                 <DetailItem label="State" value={customer.State || '-'} />
                 <DetailItem label="City" value={customer.District || '-'} />
-
                 <DetailItem label="Pincode" value={customer.PinCode || '-'} />
             </div>
         </div>
@@ -317,7 +306,6 @@ const CustomerDetailView = () => {
                 accept=".pdf,.jpg,.jpeg,.png"
             />
 
-            {/* Header / Breadcrumbs */}
             <div className="space-y-4">
                 <button
                     onClick={() => navigate('/associate/customers')}
@@ -341,7 +329,6 @@ const CustomerDetailView = () => {
                 </div>
             </div>
 
-            {/* Tabs Navigation */}
             <div className="flex gap-8 border-b border-slate-200">
                 {tabs.map((tab) => (
                     <button
@@ -363,12 +350,10 @@ const CustomerDetailView = () => {
                 ))}
             </div>
 
-            {/* Tab Content */}
             <div className="mt-6">
                 {activeTab === 'Summary' && renderSummary()}
                 {activeTab === 'Company Information' && renderCompanyInfo()}
                 {activeTab === 'Files' && renderFiles()}
-
             </div>
         </div>
     );
@@ -422,10 +407,6 @@ const CompanySummaryRow = ({ companyId }) => {
                 <DetailItem label="Mobile 1" value={companyDetails.CompanyMobile || '-'} />
                 <DetailItem label="Email 1" value={companyDetails.CompanyEmail || '-'} />
 
-                {/* <DetailItem label="Website" value={companyDetails.Website || '-'} /> */}
-                {/* <DetailItem label="Constitution Category" value={companyDetails.ConstitutionCategory || '-'} /> */}
-
-                {/* <DetailItem label="Sector" value={companyDetails.Sector || '-'} /> */}
                 <DetailItem label="Country" value={companyDetails.Country || 'India'} />
 
                 <DetailItem label="State" value={companyDetails.State || '-'} />
