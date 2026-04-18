@@ -153,7 +153,7 @@ const DashboardLayout = () => {
       if (typeof CryptoJS !== 'undefined') {
         // const encrypted = CryptoJS.AES.encrypt(String(quote.QuoteID), secret).toString();
         const encrypted = encodeURIComponent(encrypt(quote.QuoteID));
-        const url = `https://dev.bizpoleindia.in/quotes/saved-preview/${encodeURIComponent(encrypted)}`;
+        const url = `https://bizpole-one-server-production-f7hrbnhxc7e6gxep.eastasia-01.azurewebsites.net/quotes/saved-preview/${encodeURIComponent(encrypted)}`;
         window.open(url, "_blank");
       } else {
         console.error("CryptoJS is not available");
